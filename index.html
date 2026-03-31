@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>AuraTrail — Tu consejero turístico inteligente</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config={theme:{extend:{colors:{coral:'#FF6B6B','coral-d':'#EE5A5A',gold:'#F59E0B',violet:'#8B5CF6'},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *{font-family:'Inter',system-ui,sans-serif;-webkit-tap-highlight-color:transparent;}
+    body{margin:0;background:#1a1a2e;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeInScale{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+    @keyframes pulsePin{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(6,182,212,0.5)}50%{transform:scale(1.15);box-shadow:0 0 0 16px rgba(6,182,212,0)}}
+    @keyframes confettiPiece{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(-160px) rotate(720deg);opacity:0}}
+    @keyframes stampPop{0%{transform:scale(0) rotate(-20deg);opacity:0}60%{transform:scale(1.15) rotate(5deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+    @keyframes scanLine{0%{top:-2px}100%{top:100%}}
+    @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+    @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(6,182,212,0.3)}50%{box-shadow:0 0 40px rgba(6,182,212,0.6)}}
+    .fade-in{animation:fadeIn 0.6s ease forwards}
+    .fade-in-d1{animation:fadeIn 0.6s ease 0.15s forwards;opacity:0}
+    .fade-in-d2{animation:fadeIn 0.6s ease 0.3s forwards;opacity:0}
+    .fade-in-d3{animation:fadeIn 0.6s ease 0.5s forwards;opacity:0}
+    .fade-in-d4{animation:fadeIn 0.6s ease 0.7s forwards;opacity:0}
+    .pulse-pin{animation:pulsePin 2s ease-in-out infinite}
+    .stamp-pop{animation:stampPop 0.6s ease forwards}
+    .glow{animation:glow 2s ease-in-out infinite}
+    .scrollbar-hide::-webkit-scrollbar{display:none}
+    .scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}
+    .bg-img{background-size:cover;background-position:center;background-repeat:no-repeat}
+    .glass{background:rgba(255,255,255,0.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15)}
+    .glass-dark{background:rgba(0,0,0,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+    .card-hover{transition:transform 0.2s ease,box-shadow 0.2s ease}
+    .card-hover:active{transform:scale(0.97)}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useRef,useEffect}=React;
+
+/* ── LINE ICONS (SVG stroke-based) ────────────────────────────── */
+const I={
+  suitcase:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M8 8V5a2 2 0 012-2h4a2 2 0 012 2v3"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="3" y1="12" x2="21" y2="12"/></svg>,
+  camera:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+  mapPin:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill={p.f||'none'} stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+  heart:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill={p.f||'none'} stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>,
+  share:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
+  back:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>,
+  home:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  search:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+  user:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  star:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill={p.f||'none'} stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  bookmark:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill={p.f||'none'} stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>,
+  compass:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill={p.f||'none'} stroke={p.c||'currentColor'}/></svg>,
+  navigation:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill={p.f||'none'} stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>,
+  lock:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>,
+  folder:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>,
+  plus:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  x:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  check:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  clock:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  map:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>,
+  award:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>,
+  image:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+  switchCam:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 16v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4"/><path d="M4 8V4a2 2 0 012-2h12a2 2 0 012 2v4"/><polyline points="16 12 20 8 24 12"/><polyline points="0 12 4 16 8 12"/></svg>,
+  video:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>,
+  crosshair:(p)=><svg width={p.s||24} height={p.s||24} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>,
+};
+
+const CITIES=['Cartagena','Medellín','Bogotá','Cali','Santa Marta','San Andrés','Barranquilla','Villa de Leyva','Coveñas','Amazonas'];
+const CITY_IMAGES={
+  'Cartagena':'https://picsum.photos/seed/cartagena-city/600/800',
+  'Medellín':'https://picsum.photos/seed/medellin-city/600/800',
+  'Bogotá':'https://picsum.photos/seed/bogota-city/600/800',
+  'Cali':'https://picsum.photos/seed/cali-colombia/600/800',
+  'Santa Marta':'https://picsum.photos/seed/santamarta-col/600/800',
+  'San Andrés':'https://picsum.photos/seed/sanandres-isla/600/800',
+  'Barranquilla':'https://picsum.photos/seed/barranquilla-col/600/800',
+  'Villa de Leyva':'https://picsum.photos/seed/villadleyva-col/600/800',
+  'Coveñas':'https://picsum.photos/seed/covenas-playa/600/800',
+  'Amazonas':'https://picsum.photos/seed/amazonas-col/600/800'
+};
+const CITY_STAMPS={
+  'Cartagena':{emoji:'🏰',color:'#0891B2',label:'MURALLAS'},'Medellín':{emoji:'🌸',color:'#059669',label:'FLORES'},'Santa Marta':{emoji:'🏖️',color:'#F59E0B',label:'CARIBE'},
+  'Bogotá':{emoji:'🏔️',color:'#8B5CF6',label:'ANDES'},'San Andrés':{emoji:'🐠',color:'#EC4899',label:'ISLA'},'Villa de Leyva':{emoji:'🦕',color:'#EF4444',label:'FÓSILES'},
+  'Barranquilla':{emoji:'🎭',color:'#F97316',label:'CARNAVAL'},'Coveñas':{emoji:'🌊',color:'#06B6D4',label:'GOLFO'},'Amazonas':{emoji:'🌿',color:'#16A34A',label:'SELVA'},'Cali':{emoji:'💃',color:'#7C3AED',label:'SALSA'}
+};
+const STAMP_IMAGES={
+  'Cartagena':'Imagenes/Estampas/Cartagena.png',
+  'Medellín':'Imagenes/Estampas/Medellin.png',
+  'Bogotá':'Imagenes/Estampas/Bogota.png',
+  'Cali':'Imagenes/Estampas/Cali.png',
+  'Santa Marta':'Imagenes/Estampas/Santa%20Marta.png',
+  'San Andrés':'Imagenes/Estampas/San%20Andres.png',
+  'Barranquilla':'Imagenes/Estampas/Barranquilla.png',
+  'Villa de Leyva':'Imagenes/Estampas/Villa%20de%20Leyva.png',
+  'Coveñas':'Imagenes/Estampas/Cove%C3%B1as.png',
+  'Amazonas':'Imagenes/Estampas/Amazonas.png'
+};
+
+const PREF_OPTIONS=[
+  {id:'historia',label:'Historia y cultura'},{id:'naturaleza',label:'Naturaleza y aventura'},
+  {id:'gastronomia',label:'Gastronomía'},{id:'nocturna',label:'Vida nocturna'},{id:'compras',label:'Compras y moda'}
+];
+const SAVE_CATEGORIES=['Quiero ir','Ya fui','Favoritos','Para después','Recomendados'];
+
+const PLACES=[
+  {id:'castillo-san-felipe',name:'Castillo San Felipe de Barajas',city:'Cartagena',rating:4.7,category:'historia',
+   mainImage:'https://picsum.photos/seed/castillosf/800/500',photos:['https://picsum.photos/seed/castillosf/600/400','https://picsum.photos/seed/castillosfa/600/400','https://picsum.photos/seed/castillosfb/600/400','https://picsum.photos/seed/castillosfc/600/400'],
+   description:'La fortaleza más grande construida por los españoles en el Nuevo Mundo.',
+   history:'El Castillo San Felipe de Barajas, ubicado en la cima del cerro de San Lázaro, es la mayor fortaleza construida por España en América. Su construcción inició en 1536 bajo el reinado de Felipe II y fue ampliado entre 1657 y 1769.\n\nEl ingeniero militar Antonio de Arévalo diseñó su complejo sistema de galerías subterráneas que corren bajo el cerro. La acústica es tan perfecta que un susurro se escucha claramente a 100 metros.\n\nEn 1741, el almirante inglés Edward Vernon atacó con 186 barcos y 30.000 soldados. Blas de Lezo, con solo 6 navíos y 3.000 hombres, lo rechazó en uno de los mayores triunfos navales de España.\n\nLa leyenda cuenta que los piratas Francis Drake y John Hawkins nunca pudieron tomarlo. Hoy sus 47.625 m² de área son recorridos por millones de visitantes.\n\nDeclarado Patrimonio de la Humanidad por la UNESCO en 1984 junto al centro histórico de Cartagena.',
+   curiosities:[{text:'Tomó más de 200 años completar su construcción (1536-1756).'},{text:'Sus túneles tienen acústica perfecta: un susurro se escucha a 100m.'},{text:'Resistió 186 navíos ingleses con solo 6 barcos españoles.'},{text:'Tiene forma de triángulo irregular con baterías escalonadas.'},{text:'Es Patrimonio UNESCO desde 1984.'}],
+   routes:[{name:'Ruta de los Túneles',duration:'45 min',distance:'1.2 km',difficulty:'Fácil'},{name:'Circuito de Murallas',duration:'1.5 h',distance:'2.8 km',difficulty:'Moderada'},{name:'Ruta Nocturna',duration:'2 h',distance:'1.5 km',difficulty:'Fácil'}],
+   restaurants:[{name:'Carmen',cuisine:'Alta cocina caribeña',rating:4.8},{name:'La Cevichería',cuisine:'Mariscos y ceviches',rating:4.6},{name:'Restaurante 1621',cuisine:'Colonial fusión',rating:4.5}]},
+  {id:'ciudad-amurallada',name:'Ciudad Amurallada',city:'Cartagena',rating:4.8,category:'historia',
+   mainImage:'https://picsum.photos/seed/cartagenawall/800/500',photos:['https://picsum.photos/seed/cartagenawall/600/400','https://picsum.photos/seed/cartagenawalla/600/400','https://picsum.photos/seed/cartagenawallb/600/400','https://picsum.photos/seed/cartagenawallc/600/400'],
+   description:'El centro histórico mejor conservado de América Latina.',
+   history:'Recinto amurallado de 13 km construido desde el siglo XVI contra ataques piratas. El centro histórico mejor conservado de América Latina.\n\nDentro: iglesias coloniales, plazas adoquinadas, casas con balcones de buganvillas y palacetes-boutique.\n\nLas murallas tomaron dos siglos (1586-1796), diseñadas por ingenieros militares españoles e italianos con 5m de grosor.\n\nPatrimonio UNESCO desde 1984. Hoy vibrante centro cultural.',
+   curiosities:[{text:'Las murallas: 13 km de largo y hasta 5m de grosor.'},{text:'García Márquez se inspiró aquí para sus novelas.'},{text:'Getsemaní pasó de barrio peligroso a epicentro del arte urbano.'},{text:'Más de 20 iglesias coloniales dentro de los muros.'},{text:'Los balcones con buganvillas son símbolo icónico de Colombia.'}],
+   routes:[{name:'Murallas al Atardecer',duration:'1 h',distance:'3 km',difficulty:'Fácil'},{name:'Arte Urbano Getsemaní',duration:'2 h',distance:'2 km',difficulty:'Fácil'},{name:'Ruta Gastronómica',duration:'3 h',distance:'1.5 km',difficulty:'Fácil'}],
+   restaurants:[{name:'Alma',cuisine:'Colombiana de autor',rating:4.7},{name:'La Mulata',cuisine:'Criolla cartagenera',rating:4.4},{name:'El Boliche',cuisine:'Ceviche fusión',rating:4.5}]},
+  {id:'islas-rosario',name:'Islas del Rosario',city:'Cartagena',rating:4.6,category:'naturaleza',
+   mainImage:'https://picsum.photos/seed/islasrosario/800/500',photos:['https://picsum.photos/seed/islasrosario/600/400','https://picsum.photos/seed/islasrosarioa/600/400','https://picsum.photos/seed/islasrosariob/600/400','https://picsum.photos/seed/islasrosarioc/600/400'],
+   description:'27 islas con arrecifes de coral y aguas cristalinas.',
+   history:'Archipiélago de 27 islas coralinas a 45 km de Cartagena. Parque Nacional Natural Corales del Rosario y de San Bernardo.\n\nMás de 50 especies de corales y cientos de peces tropicales. Aguas cristalinas turquesa y azul profundo.\n\nHistóricamente habitadas por indígenas antes de la colonización. El Oceanario ofrece shows de delfines.\n\nParque Nacional Natural desde 1977.',
+   curiosities:[{text:'Más de 50 especies de coral y 200 de peces tropicales.'},{text:'Solo unas pocas de las 27 islas están habitadas.'},{text:'El Oceanario tiene shows de delfines.'},{text:'Visibilidad hasta 30m de profundidad.'},{text:'Parque Nacional Natural desde 1977.'}],
+   routes:[{name:'Snorkel en Arrecifes',duration:'3 h',distance:'5 km',difficulty:'Fácil'},{name:'Lancha por las Islas',duration:'4 h',distance:'20 km',difficulty:'Fácil'},{name:'Buceo Profundo',duration:'2 h',distance:'2 km',difficulty:'Difícil'}],
+   restaurants:[{name:'Isla del Encanto',cuisine:'Mariscos frescos',rating:4.3},{name:'Blue Apple Beach',cuisine:'Mediterránea-caribeña',rating:4.6},{name:'Coralina Island',cuisine:'Cocina isleña',rating:4.2}]},
+  {id:'plaza-botero',name:'Plaza Botero',city:'Medellín',rating:4.5,category:'historia',mainImage:'https://picsum.photos/seed/plazabotero/800/500',photos:['https://picsum.photos/seed/plazabotero/600/400','https://picsum.photos/seed/plazaboteroa/600/400','https://picsum.photos/seed/plazaboterob/600/400','https://picsum.photos/seed/plazaboteroc/600/400'],description:'23 esculturas monumentales de Fernando Botero al aire libre.',history:'Plaza al aire libre frente al Museo de Antioquia con 23 esculturas monumentales donadas por Botero en el año 2000.\n\nBotero (Medellín, 1932) es el artista colombiano más reconocido internacionalmente.\n\nLa donación transformó completamente esta zona del centro.\n\nCada escultura pesa entre 800 kg y varias toneladas.',curiosities:[{text:'Botero donó 23 esculturas y 187 obras más.'},{text:'La escultura más pesada: más de 6 toneladas.'},{text:'Es el punto más fotografiado de Medellín.'},{text:'El Museo de Antioquia fue la antigua Alcaldía.'},{text:'Colección valorada en +200 millones USD.'}],routes:[{name:'Arte en el Centro',duration:'2 h',distance:'2.5 km',difficulty:'Fácil'},{name:'Cultural Walking Tour',duration:'3 h',distance:'4 km',difficulty:'Fácil'},{name:'Botero al Parque Berrío',duration:'1 h',distance:'1 km',difficulty:'Fácil'}],restaurants:[{name:'Hacienda Junín',cuisine:'Antioqueña tradicional',rating:4.4},{name:"Mondongo's",cuisine:'Típica paisa',rating:4.3},{name:'El Herbario',cuisine:'Vegetariana',rating:4.5}]},
+  {id:'el-penol',name:'Piedra del Peñol',city:'Medellín',rating:4.8,category:'naturaleza',mainImage:'https://picsum.photos/seed/penolguatape/800/500',photos:['https://picsum.photos/seed/penolguatape/600/400','https://picsum.photos/seed/penolguatapea/600/400','https://picsum.photos/seed/penolguatapeb/600/400','https://picsum.photos/seed/penolguatapec/600/400'],description:'Monolito de 220m con 740 escalones y vista panorámica.',history:'Monolito de granito de 220m sobre el suelo a 80 km de Medellín. 740 peldaños incrustados en una grieta de la roca.\n\n70 millones de años, 10 millones de toneladas. Los Tahamíes la llamaban "Moijcá".\n\nDesde la cima: vista panorámica del embalse de Guatapé (1970).\n\nPrimera escalada en 1954 por Luis Eduardo Villegas (5 días con estacas de madera).',curiosities:[{text:'Pesa ~10 millones de toneladas.'},{text:'Exactamente 740 escalones.'},{text:'Vista hasta 100 km a la redonda.'},{text:'Primera escalada tomó 5 días (1954).'},{text:'La disputa G/U pintadas: Guatapé vs El Peñol.'}],routes:[{name:'Subida a la Cima',duration:'45 min',distance:'0.5 km',difficulty:'Moderada'},{name:'Lancha por Embalse',duration:'2 h',distance:'15 km',difficulty:'Fácil'},{name:'Peñol + Guatapé',duration:'6 h',distance:'10 km',difficulty:'Moderada'}],restaurants:[{name:'El Peñol',cuisine:'Típica antioqueña',rating:4.2},{name:'Lake View',cuisine:'Trucha y mariscos',rating:4.4},{name:'Mi Casa Guatapé',cuisine:'Casera colombiana',rating:4.3}]},
+  {id:'comuna-13',name:'Comuna 13',city:'Medellín',rating:4.7,category:'historia',mainImage:'https://picsum.photos/seed/comuna13mde/800/500',photos:['https://picsum.photos/seed/comuna13mde/600/400','https://picsum.photos/seed/comuna13mdea/600/400','https://picsum.photos/seed/comuna13mdeb/600/400','https://picsum.photos/seed/comuna13mdec/600/400'],description:'De zona de conflicto a epicentro del arte urbano.',history:'Antes una de las zonas más violentas del mundo.\n\nEn 2011 se inauguraron las primeras escaleras eléctricas al aire libre del mundo en un barrio informal.\n\nMás de 250 murales narran la historia de resiliencia.\n\nHoy es uno de los destinos más visitados de Colombia.',curiosities:[{text:'El hip-hop fue clave en la transformación social.'},{text:'Primeras escaleras eléctricas al aire libre del mundo.'},{text:'Más de 250 murales adornan las calles.'},{text:'De la zona más peligrosa a la más visitada.'},{text:'Shows de breakdance callejero diarios.'}],routes:[{name:'Grafiti y Escaleras',duration:'2.5 h',distance:'2 km',difficulty:'Fácil'},{name:'Historia y Memoria',duration:'3 h',distance:'3 km',difficulty:'Moderada'},{name:'Food Tour',duration:'2 h',distance:'1.5 km',difficulty:'Fácil'}],restaurants:[{name:'Comedor Comunitario',cuisine:'Casera del barrio',rating:4.5},{name:'La Terraza',cuisine:'Street food',rating:4.3},{name:'Café del Barrio',cuisine:'Café de origen',rating:4.4}]},
+  {id:'parque-tayrona',name:'Parque Tayrona',city:'Santa Marta',rating:4.9,category:'naturaleza',mainImage:'https://picsum.photos/seed/parquetayrona/800/500',photos:['https://picsum.photos/seed/parquetayrona/600/400','https://picsum.photos/seed/parquetayronaa/600/400','https://picsum.photos/seed/parquetayronab/600/400','https://picsum.photos/seed/parquetayronac/600/400'],description:'Donde la selva tropical se encuentra con el Caribe.',history:'El Parque Nacional Natural Tayrona, creado en 1969, protege 15.000 hectáreas terrestres y 4.500 marinas en el piedemonte de la Sierra Nevada de Santa Marta.\n\nEl parque fue habitado por la civilización Tayrona entre los siglos I y XVI, cuyos descendientes, los pueblos Kogui, Wiwa, Arhuaco y Kankuamo, aún consideran sagrado este territorio.\n\nAlberga 770+ especies de plantas, 396 de aves y 36 de murciélagos. Sus playas —Cabo San Juan del Guía, Arrecifes, La Piscina— están entre las más bellas del mundo.\n\nEl parque cierra periódicamente en semana de octubre para el ritual Kogui del "pagamento a la tierra", una ceremonia de agradecimiento al universo que preserva el equilibrio de la naturaleza.\n\nEn 2015 fue declarado Reserva de la Biosfera por la UNESCO.',curiosities:[{text:'770+ especies de plantas en 15,000 ha.'},{text:'Cabo San Juan: top 10 playas de Sudamérica.'},{text:'Los Kogui realizan rituales sagrados aquí.'},{text:'Se cierra periódicamente para recuperación.'},{text:'Hogar de monos aulladores y jaguares.'}],routes:[{name:'Sendero Cabo San Juan',duration:'4 h',distance:'9 km',difficulty:'Moderada'},{name:'Arrecifes - La Piscina',duration:'2 h',distance:'3 km',difficulty:'Fácil'},{name:'Pueblito Chairama',duration:'5 h',distance:'7 km',difficulty:'Difícil'}],restaurants:[{name:'Yuluka',cuisine:'Orgánica local',rating:4.3},{name:'Donde Gira el Viento',cuisine:'Mariscos',rating:4.1},{name:'Eco Habitats',cuisine:'Ecológica',rating:4.4}]},
+  {id:'ciudad-perdida',name:'Ciudad Perdida',city:'Santa Marta',rating:4.9,category:'historia',mainImage:'https://picsum.photos/seed/ciudadperdida/800/500',photos:['https://picsum.photos/seed/ciudadperdida/600/400','https://picsum.photos/seed/ciudadperdidaa/600/400','https://picsum.photos/seed/ciudadperdidab/600/400','https://picsum.photos/seed/ciudadperdidac/600/400'],description:'650 años más antigua que Machu Picchu.',history:'Teyuna, conocida como Ciudad Perdida, fue construida alrededor del año 800 d.C. por la civilización Tayrona, 650 años antes que Machu Picchu.\n\nFue abandonada durante la conquista española en el siglo XVI y permaneció oculta bajo la selva durante siglos. En 1972, un grupo de guaqueros (cazadores de tesoros) llegó a ella siguiendo un camino de piedra y la reportó a las autoridades.\n\nLas 169 terrazas escalonadas en la ladera de la Sierra Nevada de Santa Marta fueron construidas con precisión asombrosa. El sitio tiene 1.200 m de altitud y solo se puede acceder caminando 4 a 6 días por la selva.\n\nPara los pueblos indígenas Kogui, Arhuaco, Wiwa y Kankuamo es el "corazón del mundo" y un centro ceremonial activo. Solo el 10% del sitio ha sido excavado.\n\nEs el yacimiento arqueológico más grande de Colombia y uno de los más importantes de América del Sur.',curiosities:[{text:'Construida 650 años antes que Machu Picchu.'},{text:'Solo se llega caminando 4-6 días.'},{text:'169 terrazas de piedra en la ladera.'},{text:'Solo se ha descubierto el 10%.'},{text:'4 pueblos indígenas descienden de los constructores.'}],routes:[{name:'Trek 4 días',duration:'4 días',distance:'44 km',difficulty:'Difícil'},{name:'Trek 6 días',duration:'6 días',distance:'52 km',difficulty:'Difícil'},{name:'Ruta al Mirador',duration:'2 días',distance:'20 km',difficulty:'Moderada'}],restaurants:[{name:'Campamento Wiwa',cuisine:'Campo orgánica',rating:4.2},{name:'Teyuna',cuisine:'Tradicional sierra',rating:4.0},{name:'Donde Elisa',cuisine:'Casera samaria',rating:4.3}]},
+  {id:'el-rodadero',name:'El Rodadero',city:'Santa Marta',rating:4.3,category:'naturaleza',mainImage:'https://picsum.photos/seed/elrodadero/800/500',photos:['https://picsum.photos/seed/elrodadero/600/400','https://picsum.photos/seed/elrodaderoa/600/400','https://picsum.photos/seed/elrodaderob/600/400','https://picsum.photos/seed/elrodaderoc/600/400'],description:'La playa urbana más popular de Santa Marta.',history:'Balneario en la bahía de Gaira. Nombre: deslizamientos de arena por colinas.\n\nDesde los 50s es el destino principal de playa. Aguas tranquilas para familias.\n\nDesde el muelle: lanchas a Playa Blanca.\n\nAtardecer con Sierra Nevada de fondo es espectacular.',curiosities:[{text:'Nombre: "rodar" por las dunas de arena.'},{text:'Atardeceres con Sierra Nevada famosos mundialmente.'},{text:'Zona de avistamiento de tortugas marinas.'},{text:'Festivales y conciertos cada diciembre.'},{text:'Lanchas a playas secretas por mar.'}],routes:[{name:'Paseo Malecón',duration:'1 h',distance:'2 km',difficulty:'Fácil'},{name:'Playa Blanca en Lancha',duration:'3 h',distance:'8 km',difficulty:'Fácil'},{name:'Kayak al Atardecer',duration:'2 h',distance:'4 km',difficulty:'Moderada'}],restaurants:[{name:'Donde Chucho',cuisine:'Pescados frescos',rating:4.5},{name:'Burukuka',cuisine:'Fusión caribeña',rating:4.4},{name:'Iguanas',cuisine:'Internacional',rating:4.1}]},
+  {id:'monserrate',name:'Cerro de Monserrate',city:'Bogotá',rating:4.6,category:'historia',mainImage:'https://picsum.photos/seed/monserrate/800/500',photos:['https://picsum.photos/seed/monserrate/600/400','https://picsum.photos/seed/monserratea/600/400','https://picsum.photos/seed/monserrateb/600/400','https://picsum.photos/seed/monserratec/600/400'],description:'Santuario colonial a 3,152 metros de altura.',history:'A 3,152m sobre el nivel del mar. Santuario del Señor Caído desde el siglo XVII.\n\nConstruido en 1657. Miles de fieles suben cada semana.\n\nAcceso: teleférico, funicular o sendero de 2.5 km.\n\nVista panorámica de 8+ millones de habitantes.',curiosities:[{text:'3,152m: más alto que muchas montañas europeas.'},{text:'Teleférico inaugurado en 1955.'},{text:'3+ millones de peregrinos al año.'},{text:'En días claros se ven los nevados.'},{text:'Tamales y chocolate santafereño son tradición.'}],routes:[{name:'Sendero Peatonal',duration:'1.5 h',distance:'2.5 km',difficulty:'Difícil'},{name:'Teleférico + Cima',duration:'1 h',distance:'1 km',difficulty:'Fácil'},{name:'Monserrate-Guadalupe',duration:'4 h',distance:'6 km',difficulty:'Difícil'}],restaurants:[{name:'San Isidro',cuisine:'Santafereña',rating:4.4},{name:'Casa Santa Clara',cuisine:'Alta cocina',rating:4.7},{name:'Francia',cuisine:'Francesa-bogotana',rating:4.3}]},
+  {id:'la-candelaria',name:'La Candelaria',city:'Bogotá',rating:4.5,category:'historia',mainImage:'https://picsum.photos/seed/candelariabog/800/500',photos:['https://picsum.photos/seed/candelariabog/600/400','https://picsum.photos/seed/candelariaboga/600/400','https://picsum.photos/seed/candelariabogb/600/400','https://picsum.photos/seed/candelariabogc/600/400'],description:'Centro histórico colonial con museos y arte.',history:'Fundada en 1538. Calles empedradas y casas coloniales.\n\nPalacio de Nariño, Congreso, Catedral Primada, Museo del Oro, Museo Botero.\n\nPlaza de Bolívar: escenario de la independencia (1810).\n\nVibrante vida bohemia con cafés literarios y galerías.',curiosities:[{text:'Acta de Independencia firmada aquí en 1810.'},{text:'Universidades del siglo XVII.'},{text:'Más de 40 teatros.'},{text:'Chorro de Quevedo: fundación de Bogotá.'},{text:'Mayor concentración de museos de Colombia.'}],routes:[{name:'Ruta de Museos',duration:'3 h',distance:'2 km',difficulty:'Fácil'},{name:'Tour Grafiti y Arte',duration:'2.5 h',distance:'3 km',difficulty:'Fácil'},{name:'Ruta de la Independencia',duration:'2 h',distance:'2.5 km',difficulty:'Fácil'}],restaurants:[{name:'La Puerta Falsa',cuisine:'Bogotana (desde 1816)',rating:4.6},{name:'Quinua y Amaranto',cuisine:'Colombiana de autor',rating:4.5},{name:'Capital Cocina',cuisine:'Café y brunch',rating:4.4}]},
+  {id:'museo-del-oro',name:'Museo del Oro',city:'Bogotá',rating:4.8,category:'historia',mainImage:'https://picsum.photos/seed/museodeorobog/800/500',photos:['https://picsum.photos/seed/museodeorobog/600/400','https://picsum.photos/seed/museodeoroboga/600/400','https://picsum.photos/seed/museodeorobogb/600/400','https://picsum.photos/seed/museodeorobogc/600/400'],description:'55,000+ piezas de orfebrería precolombina.',history:'La colección de orfebrería prehispánica más importante del mundo.\n\nFundado en 1939 con el Poporo Quimbaya (siglo I).\n\nLa Sala de la Ofrenda ilumina gradualmente miles de piezas de oro.\n\n500,000+ visitantes/año. Gratis los domingos.',curiosities:[{text:'55,000+ piezas de oro precolombino.'},{text:'Poporo Quimbaya: 2,000+ años.'},{text:'Gratis todos los domingos.'},{text:'Sala de la Ofrenda: efecto lumínico mágico.'},{text:'500,000+ visitantes anuales.'}],routes:[{name:'Recorrido Guiado',duration:'2 h',distance:'0.8 km',difficulty:'Fácil'},{name:'Oro + La Candelaria',duration:'3 h',distance:'2.5 km',difficulty:'Fácil'},{name:'Tour Nocturno',duration:'1.5 h',distance:'0.5 km',difficulty:'Fácil'}],restaurants:[{name:'Madre',cuisine:'Contemporánea',rating:4.6},{name:'Leo Cocina y Cava',cuisine:'Alta cocina',rating:4.8},{name:'Mini-Mal',cuisine:'Ingredientes nativos',rating:4.7}]},
+  {id:'hoyo-soplador',name:'Hoyo Soplador',city:'San Andrés',rating:4.4,category:'naturaleza',mainImage:'https://picsum.photos/seed/hoyosoplador/800/500',photos:['https://picsum.photos/seed/hoyosoplador/600/400','https://picsum.photos/seed/hoyosopladora/600/400','https://picsum.photos/seed/hoyosopladorb/600/400','https://picsum.photos/seed/hoyosopladorc/600/400'],description:'Géiser marino natural de hasta 20 metros.',history:'Formación geológica en el extremo sur. Chorros de agua de hasta 20m.\n\nCavernas submarinas canalizan la presión del oleaje.\n\nPunto de encuentro cultural con artesanías raizales y reggae.\n\nMás espectacular entre noviembre y enero.',curiosities:[{text:'Chorros hasta 20 metros de altura.'},{text:'Géiser natural impulsado por las olas.'},{text:'Tradición de reggae raizal.'},{text:'Más espectacular nov-ene.'},{text:'El rondón de aquí: el mejor de la isla.'}],routes:[{name:'Sur de la Isla',duration:'2 h',distance:'8 km',difficulty:'Fácil'},{name:'Moto por la Costa',duration:'3 h',distance:'25 km',difficulty:'Fácil'},{name:'Caminata Costera',duration:'1.5 h',distance:'3 km',difficulty:'Fácil'}],restaurants:[{name:'Miss Celia',cuisine:'Raizal',rating:4.5},{name:'La Regatta',cuisine:'Mariscos',rating:4.6},{name:'Fisherman Place',cuisine:'Pescados',rating:4.3}]},
+  {id:'acuario-natural',name:'Acuario Natural',city:'San Andrés',rating:4.5,category:'naturaleza',mainImage:'https://picsum.photos/seed/acuariosai/800/500',photos:['https://picsum.photos/seed/acuariosai/600/400','https://picsum.photos/seed/acuariosaia/600/400','https://picsum.photos/seed/acuariosaib/600/400','https://picsum.photos/seed/acuariosaic/600/400'],description:'Piscina natural con mantarrayas y peces tropicales.',history:'West View: piscina natural formada por coral.\n\nNadar con mantarrayas y peces ángel. "Mar de los Siete Colores".\n\nTrampolín sobre el mar y plataformas flotantes.\n\nComunidad raizal guardiana del ecosistema.',curiosities:[{text:'Los famosos "siete colores" del mar.'},{text:'Mantarrayas a menos de un metro.'},{text:'Visibilidad +30 metros.'},{text:'Coral como barrera natural.'},{text:'Comunidad raizal protege el ecosistema.'}],routes:[{name:'Snorkel Acuario',duration:'2 h',distance:'1 km',difficulty:'Fácil'},{name:'Acuario + Haynes Cay',duration:'4 h',distance:'5 km',difficulty:'Fácil'},{name:'Buceo con Instructor',duration:'1.5 h',distance:'0.5 km',difficulty:'Moderada'}],restaurants:[{name:'West View',cuisine:'Raizal',rating:4.3},{name:"Niko's Seafood",cuisine:'Langosta',rating:4.5},{name:'El Paraíso',cuisine:'Ceviche isleño',rating:4.2}]},
+  {id:'johnny-cay',name:'Johnny Cay',city:'San Andrés',rating:4.6,category:'naturaleza',mainImage:'https://picsum.photos/seed/johnnycay/800/500',photos:['https://picsum.photos/seed/johnnycay/600/400','https://picsum.photos/seed/johnnycaya/600/400','https://picsum.photos/seed/johnnycayb/600/400','https://picsum.photos/seed/johnnycayc/600/400'],description:'Islote paradisíaco con cocoteros.',history:'Islote Sucre: 1.5 ha a 1.5 km al norte. Parque Natural Regional desde 2001.\n\nCocoteros, arena blanca, aguas turquesa.\n\nAnidación de aves marinas e iguanas.\n\nLanchas rápidas: 10 minutos desde San Andrés.',curiosities:[{text:'1.5 ha, se recorre en 15 minutos.'},{text:'"Coco loco" famoso en toda Colombia.'},{text:'Colonia protegida de iguanas.'},{text:'Solo en lancha, 10 min.'},{text:'Reggae en vivo todos los días.'}],routes:[{name:'Paseo por el Cayo',duration:'1 h',distance:'0.8 km',difficulty:'Fácil'},{name:'Snorkel alrededor',duration:'1.5 h',distance:'1.5 km',difficulty:'Fácil'},{name:'Johnny Cay + Acuario',duration:'5 h',distance:'8 km',difficulty:'Fácil'}],restaurants:[{name:'Bar Coco Loco',cuisine:'Cócteles',rating:4.4},{name:'La Choza Isleña',cuisine:'Pescado frito',rating:4.3},{name:"Johnny's Grill",cuisine:'Parrilla caribeña',rating:4.1}]},
+  {id:'plaza-mayor-vl',name:'Plaza Mayor',city:'Villa de Leyva',rating:4.7,category:'historia',mainImage:'https://picsum.photos/seed/plazamayorvl/800/500',photos:['https://picsum.photos/seed/plazamayorvl/600/400','https://picsum.photos/seed/plazamayorvla/600/400','https://picsum.photos/seed/plazamayorvlb/600/400','https://picsum.photos/seed/plazamayorvlc/600/400'],description:'La plaza empedrada más grande de Colombia.',history:'14,000 m² empedrados. Siglo XVI.\n\nFundada en 1572. Monumento Nacional desde 1954.\n\nPiedras de río pulidas, arquitectura colonial perfecta.\n\nFestival del Viento y las Cometas cada agosto.',curiosities:[{text:'14,000 m²: la más grande de Colombia.'},{text:'Piedras de río pulidas a mano.'},{text:'Festival de Cometas cada agosto.'},{text:'Monumento Nacional desde 1954.'},{text:'Fósiles de dinosaurios marinos cerca.'}],routes:[{name:'Tour Colonial',duration:'2 h',distance:'2 km',difficulty:'Fácil'},{name:'Ruta Museos',duration:'3 h',distance:'2.5 km',difficulty:'Fácil'},{name:'Bicicleta al Atardecer',duration:'1.5 h',distance:'5 km',difficulty:'Fácil'}],restaurants:[{name:'Savia',cuisine:'De autor',rating:4.6},{name:'Casa Quintero',cuisine:'Boyacense',rating:4.4},{name:'Mercado Municipal',cuisine:'De plaza',rating:4.3}]},
+  {id:'desierto-candelaria',name:'Desierto de la Candelaria',city:'Villa de Leyva',rating:4.5,category:'naturaleza',mainImage:'https://picsum.photos/seed/desiertovl/800/500',photos:['https://picsum.photos/seed/desiertovl/600/400','https://picsum.photos/seed/desiertovla/600/400','https://picsum.photos/seed/desiertovlb/600/400','https://picsum.photos/seed/desiertovlc/600/400'],description:'Paisaje desértico con monasterio del s.XVII.',history:'Zona árida a 7 km de Villa de Leyva.\n\nMonasterio de la Candelaria (1597) aún habitado por monjes.\n\nFósiles de reptiles marinos de 100 millones de años.\n\n"Pozos Azules": lagunas de azul intenso.',curiosities:[{text:'Uno de los pocos desiertos andinos.'},{text:'Monasterio con monjes desde 1597.'},{text:'Fósiles de 100 millones de años.'},{text:'30+ especies de cactus endémicos.'},{text:'"Pozos Azules" de color natural intenso.'}],routes:[{name:'Al Monasterio',duration:'2 h',distance:'4 km',difficulty:'Moderada'},{name:'Ruta de Fósiles',duration:'3 h',distance:'5 km',difficulty:'Moderada'},{name:'Desierto + Pozos',duration:'4 h',distance:'8 km',difficulty:'Fácil'}],restaurants:[{name:'Del Monasterio',cuisine:'Monacal',rating:4.2},{name:'Casa de Adobe',cuisine:'Boyacense',rating:4.3},{name:'El Cactus',cuisine:'Parrilla',rating:4.1}]},
+  {id:'pozo-azul',name:'Pozo Azul',city:'Villa de Leyva',rating:4.4,category:'naturaleza',mainImage:'https://picsum.photos/seed/pozoazul/800/500',photos:['https://picsum.photos/seed/pozoazul/600/400','https://picsum.photos/seed/pozoazula/600/400','https://picsum.photos/seed/pozoazulb/600/400','https://picsum.photos/seed/pozoazulc/600/400'],description:'Piscinas naturales de agua cristalina azul.',history:'Color azul por minerales como cobre y azufre.\n\nProcesos geológicos milenarios. Color varía según la luz.\n\nPropiedad privada abierta al turismo. Mejor al mediodía.\n\nNo aptos para nadar pero muy fotogénicos.',curiosities:[{text:'Color azul por cobre y azufre.'},{text:'Los más "instagrameados" de Boyacá.'},{text:'Mejor al mediodía con sol directo.'},{text:'No se permite nadar.'},{text:'Color cambia según la hora.'}],routes:[{name:'Sendero de los Pozos',duration:'1 h',distance:'1.5 km',difficulty:'Fácil'},{name:'Pozos + Desierto',duration:'4 h',distance:'10 km',difficulty:'Moderada'},{name:'Ciclopaseo Rural',duration:'2 h',distance:'6 km',difficulty:'Fácil'}],restaurants:[{name:'Doña Rosa',cuisine:'Campesina boyacense',rating:4.3},{name:'El Olivo',cuisine:'Mediterránea-andina',rating:4.5},{name:'La Gallina e la Polenta',cuisine:'Italiana rústica',rating:4.4}]},
+  {id:'barranquilla-carnaval',name:'Carnaval de Barranquilla',city:'Barranquilla',rating:4.8,category:'historia',mainImage:'https://picsum.photos/seed/carnavalbarranq/800/500',photos:['https://picsum.photos/seed/carnavalbarranq/600/400','https://picsum.photos/seed/carnavalbarranqa/600/400','https://picsum.photos/seed/carnavalbarranqb/600/400','https://picsum.photos/seed/carnavalbarranqc/600/400'],description:'El carnaval más grande de Colombia, Patrimonio Inmaterial UNESCO.',history:'El Carnaval de Barranquilla es la fiesta más grande de Colombia y la segunda del mundo después del de Río de Janeiro.\n\nDeclarado Patrimonio Oral e Inmaterial de la Humanidad por la UNESCO en 2003.\n\nSe celebra cuatro días antes del Miércoles de Ceniza con desfiles, comparsas y disfraces.\n\nEs una fusión de tradiciones indígenas, africanas y europeas.',curiosities:[{text:'Patrimonio Inmaterial UNESCO desde 2003.'},{text:'Segundo carnaval más grande del mundo.'},{text:'4 días de fiesta antes de Cuaresma.'},{text:'Fusión de 3 culturas: indígena, africana, europea.'},{text:'La Batalla de Flores inaugura el carnaval.'}],routes:[{name:'Ruta del Carnaval',duration:'4 h',distance:'5 km',difficulty:'Fácil'},{name:'Museos del Carnaval',duration:'2 h',distance:'2 km',difficulty:'Fácil'},{name:'Barranquilla Nocturna',duration:'3 h',distance:'3 km',difficulty:'Fácil'}],restaurants:[{name:'La Cueva',cuisine:'Caribeña tradicional',rating:4.6},{name:'Restaurante Árabe',cuisine:'Árabe-barranquillera',rating:4.5},{name:'Salome Cocina',cuisine:'Fusión costeña',rating:4.4}]},
+  {id:'barranquilla-bocas',name:'Bocas de Ceniza',city:'Barranquilla',rating:4.3,category:'naturaleza',mainImage:'https://picsum.photos/seed/bocasdecentza/800/500',photos:['https://picsum.photos/seed/bocasdecentza/600/400','https://picsum.photos/seed/bocasdecentzaa/600/400','https://picsum.photos/seed/bocasdecentzab/600/400','https://picsum.photos/seed/bocasdecentzac/600/400'],description:'Donde el río Magdalena se encuentra con el mar Caribe.',history:'Bocas de Ceniza es el punto exacto donde el río Magdalena desemboca en el mar Caribe.\n\nSe accede por un paseo en tren artesanal sobre los antiguos tajamares.\n\nEl espectáculo de las dos aguas (dulce y salada) es impresionante.\n\nPunto estratégico para el comercio desde la colonia.',curiosities:[{text:'Desembocadura del río más importante de Colombia.'},{text:'Paseo en tren artesanal sobre los tajamares.'},{text:'El agua dulce y salada se ven claramente.'},{text:'Punto comercial clave desde la colonia.'},{text:'Atardeceres espectaculares sobre el río.'}],routes:[{name:'Tren por los Tajamares',duration:'2 h',distance:'4 km',difficulty:'Fácil'},{name:'Tour Fluvial',duration:'3 h',distance:'10 km',difficulty:'Fácil'},{name:'Puesta de Sol',duration:'1.5 h',distance:'2 km',difficulty:'Fácil'}],restaurants:[{name:'El Muelle',cuisine:'Pescados de río',rating:4.3},{name:'Bocas Grill',cuisine:'Parrilla costeña',rating:4.2},{name:'Doña Lola',cuisine:'Casera barranquillera',rating:4.4}]},
+  {id:'barranquilla-malecon',name:'Malecón del Río',city:'Barranquilla',rating:4.4,category:'historia',mainImage:'https://picsum.photos/seed/maleconbaq/800/500',photos:['https://picsum.photos/seed/maleconbaq/600/400','https://picsum.photos/seed/maleconbaqa/600/400','https://picsum.photos/seed/maleconbaqb/600/400','https://picsum.photos/seed/maleconbaqc/600/400'],description:'Paseo junto al Magdalena con arte y gastronomía.',history:'El Malecón del Río es un moderno paseo peatonal a orillas del río Magdalena.\n\nTransformó una zona industrial abandonada en un espacio cultural vibrante.\n\nGalerías de arte, restaurantes, bares y espacios de eventos.\n\nEs el símbolo de la renovación urbana de Barranquilla.',curiosities:[{text:'Transformación de zona industrial a cultural.'},{text:'Paseo peatonal de 1.5 km junto al río.'},{text:'Símbolo de la renovación de Barranquilla.'},{text:'Galerías, restaurantes y bares.'},{text:'Eventos culturales todo el año.'}],routes:[{name:'Paseo Completo',duration:'1.5 h',distance:'1.5 km',difficulty:'Fácil'},{name:'Ruta Gastronómica',duration:'2 h',distance:'1 km',difficulty:'Fácil'},{name:'Arte y Cultura',duration:'2 h',distance:'1.5 km',difficulty:'Fácil'}],restaurants:[{name:'Terrace Malecón',cuisine:'Fusión moderna',rating:4.5},{name:'Río Resto-bar',cuisine:'Coctelería y tapas',rating:4.4},{name:'El Balcón',cuisine:'Caribeña gourmet',rating:4.3}]},
+  {id:'covenas-playa',name:'Playa Blanca Coveñas',city:'Coveñas',rating:4.5,category:'naturaleza',mainImage:'https://picsum.photos/seed/playacovenas/800/500',photos:['https://picsum.photos/seed/playacovenas/600/400','https://picsum.photos/seed/playacovenasa/600/400','https://picsum.photos/seed/playacovenasb/600/400','https://picsum.photos/seed/playacovenasc/600/400'],description:'Aguas tranquilas y manglares en el Golfo de Morrosquillo.',history:'Coveñas está ubicada en el Golfo de Morrosquillo, departamento de Sucre.\n\nSus playas de aguas cálidas y tranquilas son ideales para familias.\n\nRodeada de manglares y ecosistemas marinos.\n\nDestino económico y accesible para turismo nacional.',curiosities:[{text:'Aguas cálidas todo el año (28-30°C).'},{text:'Golfo de Morrosquillo: aguas ultra-tranquilas.'},{text:'Ecosistemas de manglar protegidos.'},{text:'Destino más económico del Caribe colombiano.'},{text:'Atardeceres sobre el golfo son mágicos.'}],routes:[{name:'Recorrido de Playas',duration:'3 h',distance:'5 km',difficulty:'Fácil'},{name:'Tour de Manglares',duration:'2 h',distance:'4 km',difficulty:'Fácil'},{name:'Islas cercanas en Lancha',duration:'4 h',distance:'15 km',difficulty:'Fácil'}],restaurants:[{name:'Restaurante Mar Adentro',cuisine:'Mariscos del golfo',rating:4.3},{name:'El Kiosko',cuisine:'Cocina costeña',rating:4.2},{name:'Donde Juancho',cuisine:'Pescados y coco',rating:4.4}]},
+  {id:'covenas-isla',name:'Isla Palma',city:'Coveñas',rating:4.4,category:'naturaleza',mainImage:'https://picsum.photos/seed/islampalma/800/500',photos:['https://picsum.photos/seed/islampalma/600/400','https://picsum.photos/seed/islampalmaa/600/400','https://picsum.photos/seed/islampalmab/600/400','https://picsum.photos/seed/islampalmac/600/400'],description:'Isla privada con arrecifes y biodiversidad marina.',history:'Isla Palma es una pequeña isla frente a la costa de Coveñas.\n\nConocida por sus arrecifes de coral y aguas cristalinas ideales para snorkel.\n\nHábitat de aves marinas y fauna tropical.\n\nAcceso solo en lancha desde Coveñas o Tolú.',curiosities:[{text:'Arrecifes de coral en excelente estado.'},{text:'Ideal para snorkel y buceo.'},{text:'Solo accesible en lancha.'},{text:'Hábitat de aves marinas protegidas.'},{text:'Playas casi desiertas entre semana.'}],routes:[{name:'Snorkel en Arrecife',duration:'2 h',distance:'2 km',difficulty:'Fácil'},{name:'Vuelta a la Isla',duration:'1.5 h',distance:'3 km',difficulty:'Fácil'},{name:'Buceo con guía',duration:'2 h',distance:'1 km',difficulty:'Moderada'}],restaurants:[{name:'Isla Palma Beach',cuisine:'Mariscos frescos',rating:4.2},{name:'Kiosco Tropical',cuisine:'Fritos costeños',rating:4.1},{name:'El Pescador',cuisine:'Pescado del día',rating:4.3}]},
+  {id:'covenas-tolu',name:'Santiago de Tolú',city:'Coveñas',rating:4.3,category:'historia',mainImage:'https://picsum.photos/seed/santiagotolu/800/500',photos:['https://picsum.photos/seed/santiagotolu/600/400','https://picsum.photos/seed/santiagotolua/600/400','https://picsum.photos/seed/santiagotolub/600/400','https://picsum.photos/seed/santiagotoluc/600/400'],description:'Puerto colonial con historia y fiestas del mar.',history:'Santiago de Tolú es el municipio vecino de Coveñas con rica historia colonial.\n\nPuerto importante durante la colonia española.\n\nFamosa por sus fiestas patronales y festivales del mar.\n\nPuerta de entrada a las Islas de San Bernardo.',curiosities:[{text:'Puerto colonial con 500 años de historia.'},{text:'Puerta a las Islas de San Bernardo.'},{text:'Festivales del mar cada año.'},{text:'Malecón renovado con vista al golfo.'},{text:'Gastronomía costeña única.'}],routes:[{name:'Centro Histórico',duration:'1.5 h',distance:'2 km',difficulty:'Fácil'},{name:'Malecón al Atardecer',duration:'1 h',distance:'1.5 km',difficulty:'Fácil'},{name:'Tour a San Bernardo',duration:'5 h',distance:'25 km',difficulty:'Fácil'}],restaurants:[{name:'El Turista',cuisine:'Mariscos costeños',rating:4.3},{name:'Sabor Tolueño',cuisine:'Comida típica',rating:4.2},{name:'Don Pedro',cuisine:'Pescados y arroces',rating:4.4}]},
+  {id:'amazonas-leticia',name:'Leticia',city:'Amazonas',rating:4.7,category:'naturaleza',mainImage:'https://picsum.photos/seed/leticiaaz/800/500',photos:['https://picsum.photos/seed/leticiaaz/600/400','https://picsum.photos/seed/leticiaaza/600/400','https://picsum.photos/seed/leticiaazb/600/400','https://picsum.photos/seed/leticiaazc/600/400'],description:'Puerta al Amazonas colombiano, frontera con Brasil y Perú.',history:'Leticia es la capital del departamento de Amazonas, la ciudad más al sur de Colombia.\n\nUbicada en la triple frontera Colombia-Brasil-Perú.\n\nPunto de partida para expediciones al pulmón del mundo.\n\nCultura indígena Tikuna y biodiversidad extraordinaria.',curiosities:[{text:'Triple frontera: Colombia, Brasil, Perú.'},{text:'La ciudad más al sur de Colombia.'},{text:'Puerta al pulmón del mundo.'},{text:'Cultura indígena Tikuna viva.'},{text:'Biodiversidad: 674 especies de aves.'}],routes:[{name:'Selva Amazónica',duration:'8 h',distance:'20 km',difficulty:'Difícil'},{name:'Río Amazonas',duration:'4 h',distance:'30 km',difficulty:'Moderada'},{name:'Comunidades Indígenas',duration:'6 h',distance:'15 km',difficulty:'Moderada'}],restaurants:[{name:'Tierras Amazónicas',cuisine:'Cocina amazónica',rating:4.5},{name:'El Cielo',cuisine:'Pescados de río',rating:4.3},{name:'Waira Selva',cuisine:'Fusión indígena',rating:4.6}]},
+  {id:'amazonas-puerto',name:'Puerto Nariño',city:'Amazonas',rating:4.8,category:'naturaleza',mainImage:'https://picsum.photos/seed/puertonarino/800/500',photos:['https://picsum.photos/seed/puertonarino/600/400','https://picsum.photos/seed/puertonarinoa/600/400','https://picsum.photos/seed/puertonarinob/600/400','https://picsum.photos/seed/puertonarinoc/600/400'],description:'El "Pesebre Natural de Colombia" sin carros ni motos.',history:'Puerto Nariño es conocido como el Pesebre Natural de Colombia.\n\nMunicipio ecológico: no circulan carros ni motos.\n\nA orillas del río Loretoyacu, afluente del Amazonas.\n\nHogar de delfines rosados y comunidades indígenas Tikuna.',curiosities:[{text:'No circulan carros ni motos.'},{text:'"Pesebre Natural de Colombia".'},{text:'Hogar de delfines rosados.'},{text:'Comunidades Tikuna ancestrales.'},{text:'Modelo de turismo sostenible.'}],routes:[{name:'Avistamiento Delfines',duration:'3 h',distance:'10 km',difficulty:'Fácil'},{name:'Lago Tarapoto',duration:'4 h',distance:'8 km',difficulty:'Moderada'},{name:'Comunidad Tikuna',duration:'5 h',distance:'12 km',difficulty:'Moderada'}],restaurants:[{name:'Las Margaritas',cuisine:'Amazónica',rating:4.4},{name:'Loretoyacu',cuisine:'Pescados de río',rating:4.3},{name:'La Maloca',cuisine:'Indígena fusión',rating:4.5}]},
+  {id:'amazonas-victoria',name:'Victoria Regia',city:'Amazonas',rating:4.6,category:'naturaleza',mainImage:'https://picsum.photos/seed/victoriaregia/800/500',photos:['https://picsum.photos/seed/victoriaregia/600/400','https://picsum.photos/seed/victoriaregiaa/600/400','https://picsum.photos/seed/victoriaregiab/600/400','https://picsum.photos/seed/victoriaregiac/600/400'],description:'Lagos con los nenúfares más grandes del mundo.',history:'La Victoria Regia (Victoria amazonica) es el nenúfar más grande del mundo.\n\nSus hojas pueden alcanzar hasta 3 metros de diámetro.\n\nSe encuentran en los lagos cercanos a Leticia.\n\nFlorecen de noche y cambian de color al día siguiente.',curiosities:[{text:'Hojas de hasta 3 metros de diámetro.'},{text:'Pueden soportar el peso de un niño.'},{text:'Florecen de noche, blancas.'},{text:'Al día siguiente cambian a rosa.'},{text:'Símbolo del Amazonas colombiano.'}],routes:[{name:'Lagos de Victoria Regia',duration:'3 h',distance:'8 km',difficulty:'Fácil'},{name:'Nocturna de Floración',duration:'4 h',distance:'10 km',difficulty:'Moderada'},{name:'Ruta Completa Lagos',duration:'6 h',distance:'15 km',difficulty:'Moderada'}],restaurants:[{name:'Anaconda',cuisine:'Amazónica',rating:4.3},{name:'Tucán',cuisine:'Pescados locales',rating:4.2},{name:'Selva & Sabor',cuisine:'Fusión amazónica',rating:4.5}]},
+  {id:'cali-cristo',name:'Cristo Rey',city:'Cali',rating:4.6,category:'historia',mainImage:'https://picsum.photos/seed/cristoreycali/800/500',photos:['https://picsum.photos/seed/cristoreycali/600/400','https://picsum.photos/seed/cristoreycalia/600/400','https://picsum.photos/seed/cristoreycalib/600/400','https://picsum.photos/seed/cristoreycalic/600/400'],description:'Monumento icónico de 26 metros sobre el Cerro de Los Cristales.',history:'El Cristo Rey de Cali es una estatua de 26 metros sobre el Cerro de Los Cristales.\n\nConstruido entre 1950 y 1953 como símbolo de fe y protección de la ciudad.\n\nVisible desde casi toda Cali con vista panorámica espectacular.\n\nFue dañado por un rayo y restaurado en 2003.',curiosities:[{text:'26 m de altura + 8 m de pedestal.'},{text:'Visible desde casi toda la ciudad.'},{text:'Inaugurado en 1953, año del de Río.'},{text:'Restaurado tras golpe de rayo en 2003.'},{text:'Vista 360° de toda Cali desde su base.'}],routes:[{name:'Subida al Cristo',duration:'2 h',distance:'3 km',difficulty:'Moderada'},{name:'Mirador Panorámico',duration:'1 h',distance:'1 km',difficulty:'Fácil'}],restaurants:[{name:'El Faro',cuisine:'Vallecaucana',rating:4.3},{name:'Sabor Caleño',cuisine:'Típica',rating:4.4}]},
+  {id:'cali-zoo',name:'Zoológico de Cali',city:'Cali',rating:4.7,category:'naturaleza',mainImage:'https://picsum.photos/seed/zoologicocali/800/500',photos:['https://picsum.photos/seed/zoologicocali/600/400','https://picsum.photos/seed/zoologicocalia/600/400','https://picsum.photos/seed/zoologicocalib/600/400','https://picsum.photos/seed/zoologicocalic/600/400'],description:'Uno de los mejores zoológicos de América Latina.',history:'El Zoológico de Cali, fundado en 1969, alberga +1.200 animales de 200 especies en 11 ha.\n\nLíder en conservación del cóndor andino.\n\nDestino familiar #1 de Cali con +500.000 visitantes anuales.',curiosities:[{text:'1.200+ animales de 200 especies.'},{text:'11 hectáreas en plena ciudad.'},{text:'Líder en conservación del cóndor andino.'},{text:'500.000+ visitantes anuales.'},{text:'Programas de educación ambiental.'}],routes:[{name:'Recorrido Completo',duration:'3 h',distance:'2 km',difficulty:'Fácil'},{name:'Tour Nocturno',duration:'1.5 h',distance:'1 km',difficulty:'Fácil'}],restaurants:[{name:'El Cafetal',cuisine:'Ligero',rating:4.2},{name:'Brisas del Valle',cuisine:'Típica caleña',rating:4.3}]},
+  {id:'cali-san-antonio',name:'Barrio San Antonio',city:'Cali',rating:4.5,category:'historia',mainImage:'https://picsum.photos/seed/sanantoniocali/800/500',photos:['https://picsum.photos/seed/sanantoniocali/600/400','https://picsum.photos/seed/sanantoniocalia/600/400','https://picsum.photos/seed/sanantoniocalib/600/400','https://picsum.photos/seed/sanantoniocalic/600/400'],description:'El barrio más bohemio y pintoresco de Cali.',history:'San Antonio: barrio colonial del siglo XVIII con casas coloridas y calles empedradas.\n\nEpicentro de la cultura alternativa caleña.\n\nCapilla de San Antonio (1747) en el cerro con vistas a la ciudad.\n\nMercado de artesanos y músicos los domingos.',curiosities:[{text:'Capilla de 1747 sobre el cerro.'},{text:'Epicentro de la bohemia caleña.'},{text:'Mercado de artesanos los domingos.'},{text:'Cafés, galerías y restaurantes de autor.'},{text:'Atardecer panorámico desde la loma.'}],routes:[{name:'Tour Bohemio',duration:'2 h',distance:'2 km',difficulty:'Fácil'},{name:'Atardecer en la Loma',duration:'1 h',distance:'1 km',difficulty:'Fácil'}],restaurants:[{name:'La Galería',cuisine:'Bistro de autor',rating:4.6},{name:'La Tartine',cuisine:'Francesa casual',rating:4.5}]}
+];
+
+const REVIEWS=[
+  {name:'María G.',rating:5,comment:'Increíble experiencia, totalmente recomendado.',date:'Hace 2 semanas'},
+  {name:'Carlos R.',rating:4,comment:'Muy bonito, en temporada alta hay mucha gente.',date:'Hace 1 mes'},
+  {name:'Ana M.',rating:5,comment:'La historia te atrapa. Guías maravillosos.',date:'Hace 3 semanas'}
+];
+
+/* ── SUITCASE LOGO ──────────────────────────────── */
+function Logo({size=64,light=false}) {
+  const c=light?'#fff':'#06B6D4';
+  return (<svg width={size} height={size} viewBox="0 0 60 60" fill="none" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="10" y="20" width="40" height="30" rx="4"/>
+    <path d="M22 20V14a4 4 0 014-4h8a4 4 0 014 4v6"/>
+    <line x1="10" y1="32" x2="50" y2="32"/>
+    <line x1="30" y1="32" x2="30" y2="40"/>
+    <rect x="26" y="36" width="8" height="4" rx="1" fill={light?'rgba(255,255,255,0.2)':'rgba(6,182,212,0.2)'}/>
+  </svg>);
+}
+
+function Stars({rating,size=16,interactive=false,onChange}) {
+  return (<div className="flex gap-0.5 items-center">
+    {[1,2,3,4,5].map(s=>(<button key={s} disabled={!interactive} onClick={()=>interactive&&onChange&&onChange(s)} className={interactive?'cursor-pointer':'cursor-default'}>
+      <I.star s={size} c={s<=Math.round(rating)?'#F59E0B':'#D1D5DB'} f={s<=Math.round(rating)?'#F59E0B':'none'}/>
+    </button>))}
+    {!interactive&&<span className="text-xs text-gray-400 ml-1 font-medium">{rating}</span>}
+  </div>);
+}
+function Confetti(){const c=['#06B6D4','#0891B2','#F59E0B','#EF4444','#8B5CF6','#EC4899','#22D3EE','#FF6B6B'];return(<div className="fixed inset-0 pointer-events-none z-50">{Array.from({length:40},(_,i)=>i).map(i=>(<div key={i} className="absolute" style={{left:Math.random()*100+'%',top:'45%',width:5+Math.random()*8,height:5+Math.random()*8,backgroundColor:c[i%8],borderRadius:Math.random()>0.5?'50%':'2px',animation:'confettiPiece 1.4s ease '+Math.random()*0.6+'s forwards'}}/>))}</div>);}
+function Toast({message,show}){return show?<div className="fixed bottom-24 left-1/2 -translate-x-1/2 glass-dark text-white px-5 py-2.5 rounded-2xl text-sm z-50 fade-in font-medium">{message}</div>:null;}
+
+/* ── STAMP (passport style with lock) ── */
+function StampBadge({city,collected,size=115,onTapLocked}){
+  const s=CITY_STAMPS[city]||{emoji:'🌎',color:'#06B6D4',label:'MUNDO'};
+  const img=STAMP_IMAGES[city];
+  return(<div className={collected?'stamp-pop':''} style={{width:size,height:size,cursor:'pointer',position:'relative'}}
+    onClick={()=>{if(onTapLocked)onTapLocked(city);}}>
+    <div style={{width:size,height:size,borderRadius:14,overflow:'hidden',border:collected?'2px solid '+s.color:'2px dashed #D1D5DB',position:'relative'}}>
+      {img
+        ? <img src={img} alt={city} style={{width:'100%',height:'100%',objectFit:'cover',filter:collected?'none':'grayscale(0.6) brightness(0.65)'}}/>
+        : <div style={{width:'100%',height:'100%',background:'#F3F4F6',display:'flex',alignItems:'center',justifyContent:'center',fontSize:32}}>{s.emoji}</div>
+      }
+      {collected&&<div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,'+s.color+'99)',padding:'6px 4px 4px',textAlign:'center'}}>
+        <span style={{color:'white',fontSize:8,fontWeight:800,letterSpacing:1}}>EXPLORADO</span>
+      </div>}
+    </div>
+    {!collected&&<div className="absolute inset-0 flex items-center justify-center" style={{background:'rgba(0,0,0,0.3)',borderRadius:14}}>
+      <div className="bg-white/90 rounded-full p-2 shadow-md"><I.lock s={18} c="#9CA3AF"/></div>
+    </div>}
+  </div>);
+}
+
+/* ── STAMP PREVIEW MODAL ── */
+function StampPreviewModal({city,show,onClose}){
+  if(!show||!city)return null;
+  const s=CITY_STAMPS[city]||{emoji:'🌎',color:'#06B6D4',label:'MUNDO'};
+  const img=STAMP_IMAGES[city];
+  return(<div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+    <div className="absolute inset-0 bg-black/60 backdrop-filter backdrop-blur-sm"/>
+    <div className="relative bg-white rounded-3xl p-6 mx-6 max-w-[320px] w-full fade-in text-center" onClick={e=>e.stopPropagation()}>
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Estampita</p>
+      <div className="flex justify-center mb-4 relative" style={{display:'inline-block'}}>
+        <div style={{width:170,height:170,borderRadius:18,overflow:'hidden',border:'2px solid '+s.color+'60',position:'relative',margin:'0 auto'}}>
+          {img
+            ? <img src={img} alt={city} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+            : <div style={{width:170,height:170,background:s.color+'18',display:'flex',alignItems:'center',justifyContent:'center',fontSize:56}}>{s.emoji}</div>
+          }
+        </div>
+        <div style={{position:'absolute',bottom:6,right:6,background:'rgba(0,0,0,0.45)',borderRadius:'50%',width:28,height:28,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <I.lock s={14} c="white"/>
+        </div>
+      </div>
+      <p className="text-xl font-black text-gray-800 mb-1">{city}</p>
+      <div className="bg-gray-100 rounded-2xl p-4 mb-4 text-left">
+        <p className="text-xs font-bold text-blue-900 mb-1">¿Cómo conseguirla?</p>
+        <p className="text-xs text-blue-800 leading-relaxed">Visita alguno de los sitios turísticos de <strong>{city}</strong> y desbloquea tu estampita como recuerdo de tu aventura por Colombia.</p>
+      </div>
+      <button onClick={onClose} className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-semibold text-sm">Entendido</button>
+    </div>
+  </div>);
+}
+
+/* ── SAVE MODAL ── */
+function SaveModal({show,onClose,onSave,placeName}){
+  const [selected,setSelected]=useState(null);
+  const [custom,setCustom]=useState('');
+  if(!show)return null;
+  return(<div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
+    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"/>
+    <div className="relative w-full max-w-[430px] bg-white rounded-t-3xl p-6 pb-8 fade-in" onClick={e=>e.stopPropagation()}>
+      <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4"/>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-gray-800">Guardar lugar</h3>
+        <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><I.x s={16} c="#6B7280"/></button>
+      </div>
+      <p className="text-sm text-gray-500 mb-4">¿En qué categoría quieres guardar <span className="font-semibold text-gray-700">{placeName}</span>?</p>
+      <div className="space-y-2 mb-4">
+        {SAVE_CATEGORIES.map(cat=>(<button key={cat} onClick={()=>setSelected(cat)}
+          className={'w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all '+(selected===cat?'border-cyan-500 bg-cyan-50':'border-gray-200 hover:border-gray-300')}>
+          <I.folder s={18} c={selected===cat?'#06B6D4':'#9CA3AF'}/>
+          <span className={'text-sm font-medium '+(selected===cat?'text-cyan-600':'text-gray-700')}>{cat}</span>
+          {selected===cat&&<span className="ml-auto"><I.check s={18} c="#06B6D4"/></span>}
+        </button>))}
+      </div>
+      <div className="flex gap-2 mb-4">
+        <input value={custom} onChange={e=>setCustom(e.target.value)} placeholder="O crea una nueva..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-cyan-500"/>
+        {custom.trim()&&<button onClick={()=>{setSelected(custom.trim());setCustom('');}} className="px-3 py-2.5 bg-cyan-500 text-white rounded-xl text-sm font-medium"><I.plus s={16} c="white"/></button>}
+      </div>
+      <button onClick={()=>{if(selected)onSave(selected);}} disabled={!selected}
+        className={'w-full py-3.5 rounded-2xl font-semibold text-white transition-all '+(selected?'bg-gradient-to-r from-cyan-500 to-cyan-600 shadow-lg':'bg-gray-300')}>
+        {selected?'Guardar en "'+selected+'"':'Selecciona una categoría'}
+      </button>
+    </div>
+  </div>);
+}
+
+/* ═══════════════════ APP ═══════════════════ */
+function App(){
+  const [screen,setScreen]=useState('splash');
+  const [userName,setUserName]=useState('');
+  const [userPrefs,setUserPrefs]=useState([]);
+  const [favorites,setFavorites]=useState({});
+  const [stamps,setStamps]=useState(new Set());
+  const [selectedPlace,setSelectedPlace]=useState(null);
+  const [selectedCity,setSelectedCity]=useState(null);
+  const [toast,setToast]=useState('');
+  const [showConfetti,setShowConfetti]=useState(false);
+  const [detailTab,setDetailTab]=useState(0);
+  const [userReviews,setUserReviews]=useState({});
+  const [reviewText,setReviewText]=useState('');
+  const [reviewRating,setReviewRating]=useState(0);
+  const [nameInput,setNameInput]=useState('');
+  const [arOffset,setArOffset]=useState({x:0,y:0});
+  const [arDragging,setArDragging]=useState(false);
+  const [arStart,setArStart]=useState({x:0,y:0});
+  const [transitioning,setTransitioning]=useState(false);
+  const [saveModal,setSaveModal]=useState({show:false,placeId:null,placeName:''});
+  const [stampPreview,setStampPreview]=useState(null);
+  const [cityView,setCityView]=useState('carousel');
+  const [carouselIdx,setCarouselIdx]=useState(0);
+  const prevRef=useRef('splash');
+  const scrollRef=useRef(null);
+
+  function nav(to){setTransitioning(true);setTimeout(()=>{prevRef.current=screen;setScreen(to);setTransitioning(false);if(scrollRef.current)scrollRef.current.scrollTop=0;},180);}
+  function showT(m){setToast(m);setTimeout(()=>setToast(''),2500);}
+  function handleSave(placeId,placeName){setSaveModal({show:true,placeId,placeName});}
+  function confirmSave(category){const id=saveModal.placeId;setFavorites(p=>({...p,[id]:category}));setSaveModal({show:false,placeId:null,placeName:''});showT('Guardado en "'+category+'" ✓');}
+  function removeFav(id){setFavorites(p=>{const n={...p};delete n[id];return n;});}
+  function collectStamp(id){if(stamps.has(id))return;setStamps(p=>new Set(p).add(id));setShowConfetti(true);setTimeout(()=>setShowConfetti(false),1500);}
+  function submitReview(pid){if(!reviewText.trim()||reviewRating===0)return;setUserReviews(p=>({...p,[pid]:[...(p[pid]||[]),{name:userName||'Anónimo',rating:reviewRating,comment:reviewText,date:'Ahora'}]}));setReviewText('');setReviewRating(0);showT('Reseña publicada ✓');}
+  function openDetail(place){setSelectedPlace(place);setDetailTab(0);setReviewText('');setReviewRating(0);nav('detail');}
+  function arDown(e){setArDragging(true);const p=e.touches?e.touches[0]:e;setArStart({x:p.clientX-arOffset.x,y:p.clientY-arOffset.y});}
+  function arMove(e){if(!arDragging)return;const p=e.touches?e.touches[0]:e;setArOffset(prev=>({x:Math.max(-1800,Math.min(0,p.clientX-arStart.x)),y:0}));}
+  function arUp(){setArDragging(false);}
+
+  const showNav=!['splash','ar','guide-name','guide-prefs'].includes(screen);
+
+  function renderScreen(){switch(screen){
+
+  /* ═══ SPLASH ═══ */
+  case 'splash': return (
+    <div className="min-h-screen relative overflow-hidden" style={{height:'100vh',display:'flex',flexDirection:'column'}}>
+      <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80" className="absolute inset-0 w-full h-full object-cover" style={{filter:'brightness(0.80)'}} alt=""/>
+      <div className="absolute inset-0" style={{background:'linear-gradient(to bottom,rgba(0,0,0,0.30) 0%,rgba(0,0,0,0.05) 40%,rgba(0,0,0,0.60) 100%)'}}/>
+      <div className="relative z-10 flex flex-col items-center justify-between h-full px-8 py-12">
+        <div className="flex-1 flex flex-col items-center justify-start pt-28">
+          <div className="fade-in mb-1">
+            <img src="data:image/png;base64,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" alt="AuraTrail" style={{height:82,objectFit:'contain',filter:'drop-shadow(0 2px 16px rgba(0,0,0,0.50))'}}/>
+          </div>
+          <p className="fade-in-d2 text-base text-white font-medium mt-4 tracking-wide">Tu consejero turístico inteligente</p>
+        </div>
+        <div className="fade-in-d3 w-full max-w-xs mb-10">
+          <button onClick={()=>{setArOffset({x:-273,y:0});nav('ar');}} className="w-full flex items-center justify-center gap-3 text-white font-semibold py-4 rounded-2xl shadow-lg transition-all text-sm mb-2.5" style={{background:'linear-gradient(135deg,#1BC8A7,#0BADA0)'}}>
+            <I.camera s={18} c="white"/> <span>Realidad aumentada</span>
+          </button>
+          <button onClick={()=>nav('guide-name')} className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-semibold py-4 rounded-2xl shadow-lg transition-all text-sm mb-5">
+            <I.compass s={18} c="white" f="rgba(255,255,255,0.3)"/> <span>Guíame por Colombia</span>
+          </button>
+          <ul className="space-y-2">
+            <li className="flex items-start gap-1.5 text-white/65 text-[11px] leading-relaxed"><span style={{color:'#1BC8A7'}} className="mt-0.5">•</span><span>Prueba nuestra realidad aumentada por medio de tu cámara y déjate sorprender por todo lo que Colombia tiene para contarte.</span></li>
+            <li className="flex items-start gap-1.5 text-white/65 text-[11px] leading-relaxed"><span className="text-cyan-400 mt-0.5">•</span><span>Déjate guiar por AuraTrail y explora Colombia destino a destino, con todo lo que necesitas saber antes de llegar.</span></li>
+          </ul>
+        </div>
+        <p className="text-xs text-white/30 font-light mt-6">Mockup educativo · AuraTrail 2026</p>
+      </div>
+    </div>);
+
+  /* ═══ AR MODE ═══ */
+  case 'ar': return (
+    <div style={{height:'100vh',background:'#000',position:'relative',overflow:'hidden',userSelect:'none'}} onMouseDown={arDown} onMouseMove={arMove} onMouseUp={arUp} onTouchStart={arDown} onTouchMove={arMove} onTouchEnd={arUp}>
+      <div style={{position:'absolute',top:0,left:0,height:'100vh',display:'flex',alignItems:'stretch',transform:'translateX('+arOffset.x+'px)',transition:arDragging?'none':'transform 0.3s ease'}}>
+        <img src="Imagenes/Vista%20360.png" alt="Vista 360" style={{height:'100vh',width:'auto',minWidth:'100vw',maxWidth:'none',display:'block',objectFit:'cover',filter:'blur(1.5px) brightness(0.72)'}} onError={e=>{e.target.style.minWidth='200vw';e.target.style.background='#1a3a2a';}}/>
+        <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse 65% 80% at 50% 50%, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.62) 100%)'}}/>
+        <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,rgba(6,182,212,0.12) 0%,transparent 50%,rgba(139,92,246,0.08) 100%)'}}/>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none"><div className="absolute left-0 w-full h-px bg-cyan-400/30" style={{animation:'scanLine 5s linear infinite'}}/></div>
+        {[{p:PLACES[0],left:460,top:'27%',dist:'1.2 km'},{p:PLACES[1],left:1080,top:'20%',dist:'0.8 km'},{p:PLACES[2],left:1720,top:'30%',dist:'3.5 km'}].map((ov,i)=>(
+          <div key={i} className="absolute" style={{left:ov.left,top:ov.top,zIndex:20,transform:'translateX(-50%)'}}>
+            <div className="flex flex-col items-center">
+              <div className="pulse-pin w-9 h-9 rounded-full flex items-center justify-center" style={{background:'linear-gradient(135deg,#06B6D4,#22D3EE)'}}>
+                <I.mapPin s={16} c="white" f="rgba(255,255,255,0.3)"/>
+              </div>
+              <div className="mt-2 glass-dark rounded-2xl px-3 py-3 text-center" style={{width:'115px'}}>
+                <p className="text-white text-[10px] font-bold leading-tight">{ov.p.name}</p>
+                <div className="flex items-center justify-center gap-1 mt-1"><I.navigation s={10} c="#22D3EE" f="#22D3EE"/><span className="text-cyan-400 text-[10px] font-medium">{ov.dist}</span></div>
+                <button onClick={e=>{e.stopPropagation();openDetail(ov.p);}} className="mt-2 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full">Ver más</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Pan hint arrows */}
+      <div className="absolute inset-y-0 left-0 flex items-center z-25 pointer-events-none" style={{opacity: arDragging?0:0.45, transition:'opacity 0.3s'}}>
+        <div style={{background:'linear-gradient(to right,rgba(0,0,0,0.35),transparent)',width:36,height:80,display:'flex',alignItems:'center',justifyContent:'flex-start',paddingLeft:6,borderRadius:'0 8px 8px 0'}}>
+          <svg width="14" height="22" viewBox="0 0 14 22" fill="none"><path d="M11 2L2 11L11 20" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+      </div>
+      <div className="absolute inset-y-0 right-0 flex items-center z-25 pointer-events-none" style={{opacity: arDragging?0:0.45, transition:'opacity 0.3s'}}>
+        <div style={{background:'linear-gradient(to left,rgba(0,0,0,0.35),transparent)',width:36,height:80,display:'flex',alignItems:'center',justifyContent:'flex-end',paddingRight:6,borderRadius:'8px 0 0 8px'}}>
+          <svg width="14" height="22" viewBox="0 0 14 22" fill="none"><path d="M3 2L12 11L3 20" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+      </div>
+      {/* Top bar */}
+      <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between z-30">
+        <div className="flex items-center gap-3">
+          <button onClick={()=>nav('splash')} className="w-10 h-10 glass rounded-full flex items-center justify-center"><I.back s={20} c="white"/></button>
+          <div>
+            <p className="text-white font-bold text-sm">Cartagena de Indias</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <I.mapPin s={10} c="#22D3EE"/>
+              <p className="text-cyan-400 text-[10px] font-medium">Tu ubicación · 10.3910° N, 75.5364° W</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Camera UI bottom bar */}
+      <div className="absolute bottom-0 left-0 right-0 z-30 pb-6 pt-4" style={{background:'linear-gradient(transparent, rgba(0,0,0,0.7))'}}>
+        {/* Zoom indicator */}
+        <div className="text-center mb-3">
+          <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">1x</span>
+        </div>
+        {/* Camera controls row */}
+        <div className="flex items-center justify-center gap-8">
+          {/* Switch camera */}
+          <button className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <I.switchCam s={18} c="white"/>
+          </button>
+          {/* Capture button - big white circle with ring */}
+          <button className="w-[68px] h-[68px] rounded-full border-[3px] border-white flex items-center justify-center">
+            <div className="w-[58px] h-[58px] rounded-full bg-white"/>
+          </button>
+          {/* Video mode */}
+          <button className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <I.video s={18} c="white"/>
+          </button>
+        </div>
+      </div>
+    </div>);
+
+  /* ═══ ONBOARDING NAME ═══ */
+  case 'guide-name': return (
+    <div className="min-h-screen bg-gradient-to-b from-cyan-50 to-white flex flex-col px-6 pt-12 pb-8">
+      <div className="w-full bg-cyan-100 rounded-full h-1.5 mb-10"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 h-1.5 rounded-full transition-all" style={{width:'50%'}}/></div>
+      <button onClick={()=>nav('splash')} className="flex items-center gap-1 text-gray-500 text-sm font-medium mb-8"><I.back s={16} c="#6B7280"/> Volver</button>
+      <div className="fade-in">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">¿Cómo te llamamos?</h2>
+        <p className="text-gray-500 text-sm mb-8">Tu nombre nos ayuda a personalizar tu experiencia.</p>
+        <input type="text" value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&nameInput.trim()){setUserName(nameInput.trim());nav('guide-prefs');}}}
+          placeholder="Tu nombre..." className="w-full bg-white border border-gray-200 focus:border-cyan-500 rounded-2xl px-5 py-4 text-gray-800 text-lg outline-none transition-colors placeholder-gray-300 shadow-sm"/>
+        <button onClick={()=>{if(nameInput.trim()){setUserName(nameInput.trim());nav('guide-prefs');}}} disabled={!nameInput.trim()}
+          className={'w-full mt-6 py-4 rounded-2xl font-bold text-white transition-all '+(nameInput.trim()?'bg-gradient-to-r from-cyan-500 to-cyan-600 shadow-lg shadow-cyan-500/30':'bg-gray-200 cursor-not-allowed')}>Continuar</button>
+      </div>
+      <div className="mt-auto flex justify-center pt-8">
+        <img src="data:image/png;base64,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" alt="AuraTrail" style={{height:48,opacity:1,objectFit:'contain'}}/>
+      </div>
+    </div>);
+
+  /* ═══ ONBOARDING PREFS ═══ */
+  case 'guide-prefs': return (
+    <div className="min-h-screen bg-gradient-to-b from-cyan-50 to-white flex flex-col px-6 pt-12 pb-8">
+      <div className="w-full bg-cyan-100 rounded-full h-1.5 mb-10"><div className="bg-gradient-to-r from-cyan-500 to-cyan-600 h-1.5 rounded-full transition-all" style={{width:'100%'}}/></div>
+      <button onClick={()=>nav('guide-name')} className="flex items-center gap-1 text-gray-500 text-sm font-medium mb-8"><I.back s={16} c="#6B7280"/> Volver</button>
+      <div className="fade-in">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">¿Qué te apasiona?</h2>
+        <p className="text-gray-500 text-sm mb-6">Selecciona al menos una preferencia.</p>
+        <div className="space-y-3 mb-8">
+          {PREF_OPTIONS.map(p=>{const sel=userPrefs.includes(p.id);return(
+            <button key={p.id} onClick={()=>setUserPrefs(prev=>sel?prev.filter(x=>x!==p.id):[...prev,p.id])}
+              className={'w-full flex items-center gap-3 px-5 py-4 rounded-2xl border-2 transition-all '+(sel?'border-cyan-500 bg-cyan-50 shadow-lg shadow-cyan-500/10':'border-gray-200 bg-white hover:bg-gray-50')}>
+              <span className={'text-sm font-semibold '+(sel?'text-cyan-600':'text-gray-600')}>{p.label}</span>
+              {sel&&<span className="ml-auto"><I.check s={18} c="#06B6D4"/></span>}
+            </button>);})}
+        </div>
+        <button onClick={()=>{if(userPrefs.length>0)nav('explore');}} disabled={userPrefs.length===0}
+          className={'w-full py-4 rounded-2xl font-bold text-white transition-all '+(userPrefs.length>0?'bg-gradient-to-r from-cyan-500 to-cyan-600 shadow-lg shadow-cyan-500/30':'bg-gray-200 cursor-not-allowed')}>
+          <span className="flex items-center justify-center gap-2"><I.compass s={20} c="white"/> Empezar a explorar</span>
+        </button>
+      </div>
+      <div className="mt-auto flex justify-center pt-6">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAk8AAACsCAYAAABiiEhrAAAACXBIWXMAABYlAAAWJQFJUiTwAAAfg0lEQVR4nO3d+Xbb1oEG8M9OuoROQ9mWN9mW6Jhp4rSlmKnbdJhOhXRfdI7VJzB8+ACWn8DwE4R5AJ2ATxDpHLbT/0KdM6NpmrSh1E6Whk4o25J3W/TC2Zpg/sClRUmUCOACuFi+36kaQyaASxImPt51l2VZ8OLF//miCGAKllW0gCFYKALIQhzvyWEtCxB/trbb7m5YgIWN2/ZDenfYug1L7LXDNtZPu+Gcm8tg9e7YW6Ynx/Jepi2vS5/tvmXoHr/nrdqwLR5vDdhef759y9CGZTUArFkWGgDqD3+aq4OIiIg22OUmPL30f1/kYEG3AB0WxgA4CwkMT3EIT/222wBmYcF4+PMTLRAREZGz8PTSP74cggUDsM73uwEzPCU2PK2XCajCsoxHv3i+BSIiohTbPegBL/3jSw1AC8D5oAtDkXYWQOPZP3w2rbogREREKu0Ynk598aUB4B0A2VBKQ1GXBfDGs3/4bPbZP3w2pLowREREKmwbnk59YZkALoZXFIqRMwDqe/71MgMUERGlTt/wdOpLqwK7mYZoO+MA6nt+zwBFRETpsiU8nbIsHezfRM6MAzBVF4KIiChMG8LTKcvKAaioKQrF1Jk9v7/MTuRERJQam2ueTLBzOLln7Pnd5ZzqQhAREYXhSXh62YIGYEJdUSjGsgAM1YUgIiIKQ2/Nk6GqEJQIZzO/a+ZUF4KIiChouwHgZSAH1jqRPEN1AYiIiILWrXmaUloKSgpeR0RElHgMT+SnbKbW1FQXgoiIKEjd8MQmO/KLproAREREQdot+jsR+aWougBERERB2g2GJ/IXl2shIqJE23ZhYCKP2ARMRESJxvBERERE5ALDExEREZELDE9ERERELjA8EREREbnA8ERERETkAsMTERERkQsMT0REREQuMDwRERERucDwREREROQCwxMRERGRCwxPRERERC4wPBERERG5wPBERERE5ALDExEREZELDE9ERERELjA8EREREbnA8ERERETkwtOqC0CutQHUATTE9hCAKQBjqgpERESUJgxP8fImAOPuqyNrm34/vW/h2hQAE0A29FIRERGlCJvt4uPc3VdHpvsEJwDAvdKxWQAa7JopIiIiCgjDUzycu/v9EXPQg+6/dqwBuwmPiIiIAsJmu+g7d+d7R0ynD77/2rH63n+7Ng9gIrgiERERhaNQKk/Bblkp9vy6DmB2aWGm0W+foDE8RZur4NRjFgxPREQUY4VSWYPdl7ffgKgJABcLpfI8gGkvIapQKg9hYyBzLOnhqQ07ra7Bbs7SAYwrLI8bF+6c9hScgPWReERERLFTKJV1AG85eOgEgHqhVNY8BKgigHdc7gMg2X2e2gC0K8e+0bhy/LnWldHnKldHnysCOAHgAoBFtcXbUfXO6SMV1YUgIiIKm2imcxKcurKwA5SnWiQvkhqengSnzX9xdfS51tWxbOXqWDaqQap65/RhXfIYoV1AREREfhFNaaaHXbMAQqt0SGKznR2cjm4NTptdzWVbsF/syrHP13JQ37RXvf1d6eAEcMRdqDK1Zg5AzuPujc5kvu/0E0RRVSiVc/B+zUdRa2lhpqW6EATAvgd7na9wolAqF8PoRJ608NQGoC07CE6bXTsx1IIIUkcv388h/CBVvf1P8sFp779f08DO4mEzAJz1uO8FhPhticgnOoCLqgvho0uw/x2TerJf/qcQQr/fJDXb2cFp5FnpF23l5N7Wysm9lZX83rCa9vwKTkXYI+0oJKLWyWtwAoBpn4pCRJQEsl/+NT8KMUhSwpNvwWmzlRf2tlZf2FdZ/ea+oIJU9fYrh3TZg+xbuFaEPe8Fl2cJly65/1im1mQzKxFRjCQlPAEhdJJe/ea+1uqL+yqrL/oWpBbhQ83DvoUVBid1/Kg5Yu0TEVGMJCU8ZQG8Nbb6qD62+iiUkWbXX9rfuv7S/sr1U/t7g9Sci0MsAtBuv3JIqrPwvv9gcFIlU2vq8Od1nxDNf0REaTcvuX8o8xwmJTx1TQD4YGzloTG68nAorJNeP7W/dePl4cqNl4enAOwFcA47B6lFANqtIoNTzPlZY2T4eCwioriSDT91PwoxSNLCU9dFAI3Raw9D70ty41vDaze+NWze+PaB7YKUP8HpjwxOKmVqTQ3+jsScytSaoQV+IqKIkhl9vLy0MBPKoKmkhifAXgvn7dFrD2dHrz7IqSjAzW8fWLv5nQPmze9sCFLarfGDUsFp/7urGhicVNN9Pl4W7PtERCkn5tu65HF33b+S7CzJ4anrDIDG6JUHhspC3CwcXLtZOGj6EJx02GvxMDgp4sP0BNvRAzgmEVGsLC3MGACqLnc7t7QwU/e/NP2lITwBdtC4ePzKg8bxKw801YXxSgQnN+v9UDCCqiEaE53QiYhSbWlhRoezGqg2gN8uLcyYgRZok7SEp65xAO8cX26bx5fbsepfsv9PDE5RIPol6QGeIshjExHFhqiBOgHgTWwchdcW2xcA5MLq59QracuzOHUWwNTxVnv6ai5rqi7MIMPvXdfB4BQVUwi2yXQiU2sWO5P5UIbbEhFFmegDFbn+oGkNT4CYG+pYq63DsqavnRiK5M2KwSlyjBDOMQ3WQFG01X08lswaeV47Fm9W9+k4lBK7TlmWBuAdWIAFy/6tJX5gwRK/6m6L/wFPfm9t2e75j/0Hq/cQfbZ7zrm1DIDV+5g+2/3KsKVM66fdcM6eMlyChcq154cis8L98PvXp2HhDUA8Z2v97zZsb/NeOXnvev6z7faG12mHMljigZ3J/C7PTzrCxPQE74R0ur2dyXxkrkWioBRKZWvwo/pbWphJ5GcNhaNQKmvw+Jme5pqnzS4C0I9eXpteOTmkfHHd4fevmwhmRBd5F2bV8TQCruUS/be8zsjf8CvciVAaeBnEKMmch/OsOWlGzdSaRdg1hkXxkwUw35nMax7OudN5cj3nKAIYwuDFVJcBtGBPQNgAUO9M5lt+livJCqVyDh6vnaWFmYHXTqFULsLuEqCh59pZWpjRPJxzp/PksPXa6Z5vO22sXzcNAHXRlBYY8Xp46ZfcCrpsXQxPG40BePvo5ftzAKZXTu5tqSjE8Ps3TDA4RYq4YZ0J8ZQ6gm8iLMJ7Tdrr8K+pI6wy6PDWRDSPbVZqFwG028w65uHYjojFo7s3Vy/nGRM/T0JWptZcBGACMFnLOZAOn68dACiUyjrsf+f93tNBgdiRQqncvW6mtjnPIFlRliflKZTKy7Ans5wNKKxU4O35X0JIqzUwPPV3BoB2tHm/spLfa4R54gN/vqGBwSmKwu6wOJapNfXOZN4M+bzkUKbWNGBfF4EMIBA1WdMIbpDCOIA3ABiZWrMCoMIQFY4BocmP4+ewHuqDuHbGYF87bxRK5SoAI6wan6hI21QFbmQBXDz66f3GyKf3tLBOevu7h+uwq0kpIkKYnmA7Ks5JA2RqzWKm1mzBronw/caUqTX1TK1ZB/AB7C9SQU+Im4X9XFqihosCUiiVi4VSuQ57EJDvwalQKmvi+J8DOI9wJlM+C6BRKJUjNyIuSAxPg40DeGfk7/fMkb/fC2tuKOV9rmgDHWpmdJ+Q6A9EARC1TR8ggBtfptbUMrVmA/aN1ZcmG5eyAN7O1Jom11n0n6htqiOA97YnNL0TxPEdyMKuhaoXSuVUXDsMT86dBdAa+eSeHsK5GJ6iReYblWwtoi65P/kkU2uakBtWv91xc5lacxb2jc/Pxaa9OgugzgDln0KpXIEdin39ElYolYcKpbIJdaFpswkAqQhQDE/uZAG8NfLJvfqRj+96HaU00J3Th2fBprtIEM0YMrUMswDmJPY/Kzqrk0IiOPneF1Esx9NAuIMRnBiH3ZmcJIlwcz6A407BHkEZtT6y40hBgGJ48mYC3od4O8Xap2iQbcc3YI8ckaFL7k9yJhBMcMrBvjaiusj3GdFMSd4Fcu0IJqJ77YwjpFFvqjA8eXPp+kv7zYDPwfCkmLi5yVSFz3cm863OZL4Oe54dr1LVETMtxDxLhuJiDHKRNZ+RpasuwADnxSSUicTw5F519cV9RtAnuXP6CJvu1DMk9++tcZI5VlY071DCdCbzFWxc8DSKDNUFoK3EYrhvqi7HAIbqAgSF4cmd6uqL+/QQz8faJ0VEZ1mZYdvLncl87/snG4ZZ+5RcU4j2F6Wz7DweWQbkarWDNiFmC08chifnqqvfDDU4AQxPKumQ609g9G6IyQdNieONc9qCZBLXhu5x92XYNVeX+vzMwb9Qpvt0HPLR0sKMzLXTxvbXThX+hTLdp+NECmcYd0ZFcMKd00dmh9+73kZ0OwUmmez0BP2CbwVyo250cPX3ROpM5mczteYcnI26m4N9fTlan040+RqQGzWqQX7gAwVgaWGmXiiVL8HZNBrdJXnqDtfc02C/7zJTaGgS+0YWw9Ng1dUXwg9OPWYRvaGoiebD9AR91wrrTOZbLm6Q/ZzN1JoGF3SNpEXYwXYN9tQD3fffzXInOuyh5/2+LLVh38RMt+9/ZzJvinmk6vB+E9Q87keD9V47LfHjytLCjCGmLuj3/rZhB6aK2yVURDDTYF97Xu9D44VSeUjUkiUGw9POqisv7NUVl4HhKXyy/Yt2+oZegdycPtNg/6couQQPgaafzmR+TQT33oWS2wAM0bFc9tgatg9ng2QztWaOwd1Xfq8Jp8Oe/b6rG7grMsFlaWFmTSy9osH7l8oiElZrzj5P26uu5L0Hp8N/u1089Lfb0h3l7nyPo+7CJBZjlZmeYG6nG4wP0xbo7LwbCYsATnQm877WBIrrozuC6k0AOdng1HPsNcg1veX8KAdhGcArSwszup+L6YpmuAticw5AcWlhxvCjxkccw5A4ROI6jTM89VddOSkRnP7zTjdlmz6Vhx3HwxNkrVOXIXH8LORGAZK8RQBagLUwBoDfdibz0/2afyXJfJbk/CpEii3CDjUD+xt5sbQwUwHw+tLCzJSfwUyQuXYS94WP4Wkrv4JTFsD4ob/e9qOJheEpBKJGR6aJdFHUHAwiW5toSOxLctqwg1Ng/Tc6k/m1TdNc+HlsmZt2zq9ypFQbgB5035+lhZl6QMddgx3+CAxPm1VXTg7pXnc+/OGG4NRlHPrr7ZxModh0F5owap38mLZgjNMWKKMHGZxCEvVJOZPKCKrGKURxv/Z9ww7j66rXnvc9OEFsVyDf1MKO48HTJfZtdybzpovHy05bMI2EdcCMgfmgaoScErWj3f4jmsfD5HwpDLmxLJrUlOpZLkXb4WE7yflSkARgeLJVr53wHpyOfHR3CDsv0njm0NIt7WbhYN3rOcDwFCgxF47M9ASuPhh9mLbgDEc/hS70m59YV24K9s1OA+d8iysj7BMWSuUc7GtmCnbglvl8o00YnvwJTnUMnj/FPLR0q3izcNBTtefd74/M7n931cuu5Iwuub/pYR9OWxAfm5fbCZQI89OQm5yQoiO0a6dQKuuwP89kRg3TAGnv81S9lsvqXnc+8rHj4ATYqV/2RjcnuT/14cP0BFUvNUCctiBWQrn5ZWpNPVNrrgF4CwxOSTEXxgSRhVJ5qlAqt2BfOwxOAUtzeKpeDS84dV08uHgr5/Wc4Ki7oMiGWlNiX0NiX05bEJ56kAfP1Jq5TK1Zh33jY9NcstSDPHihVB4qlMqzAN4Gm+ZCk9Zmu+rVMe/BaeSTe16CU5cJ7531ZmF/uJJPfJieAACMTK3pdV/ZmiMD/s0nRtsLbJSUqPmsg6EpqQK7dgqlchH2fYGhKWRpDE8qgxMATBxcvKXfGj9out3x7qsja/vfXZXpZExb+dFnSGUV+Vim1pxSPQos6YLqmM/glHxBzbtUKJW79yJeOwqkrdmuenX0OV3yGHXI90WoHGzc9FrjwJukv5LQ4ToJzyHKApkXSdR6zoI3P/KG145CaQpP0sFp5O/3TPjTiTML731dGJ58IkY0JeHDZ0IMaad4mQabW5IukBm5xYg6dgpXKC3haRGS385FcPJznqXzBxs3Nbc73X11ZA0cdeeXJNXYGKoL4EVaRwuK552k64/6C2qUnRHQccmhNPR5WgSgXRl9zvNFPPKp78GpqwJvq03Pgv2epIjlTZI0FHwqU2sOxXDpkMSttu6QDn9rPd00LbLGIsYKpfIU/K2xXITzkFdEMmrrpSU9PNnB6bj34HT00/smgpvZe/zABzenb79yyO3MxRx1J09XXQCfZWE/J+VLQJAjslNMLMN+r2fddmbP1JqW5LlJLdlrpw1x7bhda69QKtfB8A0g2eHJDk7HvuE9ODUDDU5dxoEPbs7efuVQy+kOd18dWdv3xxWOuvNI9A9K4lI30wgvPGnwZ/4azYdjxJHspKy6XwWh2JGprZ0DoIcxaWfSJbXPk3xwuhxKcALWFw52ix3HvdNVFyAgY5laM6xJM3M+HSd1zXaSnfvnGZxSz2t3g2UwOPkmieHJDk5HpYKTgXBrJs4c+MsNzeU+DE/eJbmjruPnJpaH8Uo69IhO02msPc1J7MtmWfKq4kNwSt2Xne0kLTwtAtCWpYLTmg7gom8lcs488Jcbjkce3fvBUY668yBB0xNsZ0JMvBi0cR+mR0hyiA2K1M0vxJpJCkChVNYkdpea6bxQKueQ7M9OV5IUnuzgNPKs5w+XY5+t6VDXEdvLwsGsfXLPUF2AELi5jtohnWcDEfBUfElJO111ASi2+GWnR1LCk3xw+lxpcOq6eODPN3IuHs/w5IKYniANkxKedTF/ksy3Ud1L7VPPzNrkXs7rjuL6T2MzaWJILvXiudZRrKF3XuLciZOE0XZ2cDoS++DUZcLdCKRlpCMQ+EH2m9M5AC0fyuGEBrmamWk4q2VrwPvIryyA2UytqTmdX0rUOKV9IdOWxL7T8LAQdM/rTuk1VSiVDbf9nkRwqgdTpPiKe3haBKC1ZIJTq60jOsEJACaG37+h3zl92NzpQfv+uNJdFDLNNyHHRA2JzLfu+c5k3vSnNINlas0G7Bul1z4GOpyHJxnjAOqZWnN6pw7oPTNqp76prjOZb2VqTa+7j2dqTdPNiLtMrdkN0uyvkgxevzCPAagXSmXNaYASE3Ka4LWzRZzDkx2cDu/xHJyORy84dVWG378+e+f0kb7Pbf+7q93glKQZsoMmW+tk+lEIpzqT+bVMrWnCe1X5WKbW1B0EPj8mXB0H8E6m1pyHfV3We/6uKH6mwA/gXvPwXuN3VjTBGbAnydzyOSHC6hTsEM1JDZOlDu+jwccBNAqlsgF7ksy+9xgRmqbBa2dbTyO8Zgg/yQen5XYR0QxOwPrCwVtu+DEITjIdkAMhbiS6xCGWw6x16lGBXD8DHQNCnwhpfk24OiF+Ul+75MAs5G5MY7A/v97K1Jqbl9cYQnQ/H0heHXJT6Ty5dgqlcr+lWRiYHNj9YfzCkx2cDkkHp7pvJQrG+eH3r2u9v4hBcALkm4GCIFvrYfpUDlfEshtViUM4nbaAfWHC5+drPo714DqBaH8+kLxZ+PcldfO1w+DkUHe0nZtFJVWSD05XHnSDUxyaEJ5MiLf/T7EITlFlSO6vcmJCU3L/gc2VolZtWfI85IIIxnH53KUIEU1t/MKjWDc81VUWwqFFANrnBzNpCU4AMD783vXp4feuMzh55MP0BFWnI8mCIDphL0ocwum0BZzDJXx8zckrAxHsIpEm3fAU9RQrHZxG4xecugzEKzi1VBdgE9kblOFHISTJ1nw5qX2aBWesD1VnMt8A8KbqclD8LC3MtBCNz6bU2g0AH9r9VKJahWwHpwMSwelqbIMTYJc5LsEJiFB48ml6gpY/pfFONKuFMRO4DrlaLi9SHR46k/lphP+as8YiAZYWZiqQ6xPpFZv4sXGGcVNVIXYgH5yuPYxzcIqjKK3YbUjuH6VFWGXKkhVr+u1INE9qCO9mPi/CQ9ppCDdAaSGeiwK0tDCjI9yKjzAnCo60J+Hpw10wEf43oJ20AUx9NvyMTHAaAif4ClskRtv1zHPj1bJoyooKU3J/RyElxAC1CLn3JzF6XvOgb4JtAOdEcyElxNLCjIZwaqDOLS3MmCGcJxY2r22nqyhEH20A2mfDz7S8HmB05SE7WavRUl0AQYdcaI5SrZMf0xaMi87zTs611pnMFxFck1oVgOMlXdJAvOYagEsBnaIN+zU3Azo+KSRqoC4gmCbZNoDfMjhttCE8fbRrVwPB/eN1yg5O+5/x/O1ojMFJmSj0ERJkmoPaiGYztim5v+7mwaJJ7XX4VyPSBnChM5nXGZz660zmDQCvwN9aqDkAOdY4JZvoA1WEvwM/5gEUlxZmolQLHwmba57w0a5dBtR0QgO6wWmfRHBafcTgpE4kBh1kas0pyE1P0HfJC9V8mrYg5/acokbkdXj/UG7D/kwpdibzkarRi6LOZL7hw2sO2P8eX+9M5qeieD2T/5YWZlpLCzNTsAN4Fd5rouZh1zZpYmQfbbLd2nbTsBNsmAGEwSn+WqoLIDRg33hk9o+qKQA5if093URFcKv39CXTRDm2m5F4GfbrOIvBYdTre+X2fTLhbU47JcFj02uuiZ/uWoH9mqTb2Piat3Y4vJfXfKfjyZD5txoWEzG6dpYWZhoQNc1inToNzq6dOuw173b6tzUNewkgN1ouH+/lHF7O4/lescuyrL5/ceoLawiwKpYl1tCxxP9Z63+0f29t2e75j/0H8Wdru21gERb0y3u/7j04XX80BEsEp35lWj/teuGsDWWwt3t3tLqP6dm5+1eWteO2o9elz3bfMnSP3/NWbdgWj7cGbPd77xyXqbu9QxksWBc6v2HNAhERJduWZruuj57atfbRU7t1BN8Hah6AJhOchDpY46RalGtsiIiIfLFteOr6+OndBvzvwAiIzqOXh76uXR76ulTVZu76IxMMTsp1fpOvqy4DERFR0AaGJwD4+OndjY+/sluDPUGW7Pwvbdi1WbnL2a9JN/Hkbjw2AdG0SCpForM4ERFR0LbrMN7Xx195ygRgvvi/XxRhd0bT4LzGZw6iI2Mz+zVfOtHlbjzWweAUFXXVBSAiIgqDq/DU9clXn2pAzKPz4n//Ywjrvfg3945vAGh9+o2v+t4XJnfzcRERm8gw5TgPCBERpcK2o+2iLnfzcQOWqPXqM7KNo+1CHW3Xfvzrk16GlRIREcWOoz5PUZO7+dgAO4hHCWudiIgoNWIXnk7c6uQgt/QG+Y/hiYiIUiN24QmAAbkFX8lf7ce/PsnwREREqRGr8CRqnTi6LloYnIiIKFViFZ5g1zpRtJiqC0BERBSm2Iy2O3G7MwQL9wFnI9s42i6U0XbLj391MgciIqIUiVPNk666ALQF59kiIqLUYXgiGabqAhAREYUtFuHpxO1ODpzXKWqqj3910pdldoiIiOIkFuEJ9hp6FC2G6gIQERGpwPBEXsw9+uXzLdWFICIiUoHhibxgR3EiIkqtuISnMdUFoCfmH/3y+brqQhAREakS+fD0/J3/0lSXgTbQVReAiIhIpciHJ4qUKvs6ERFR2sUhPBVVF4AAAG1whB0REVEswtOQ6gIQAKDy6BesdSIiIopDeCL1Fh/9/IShuhBERERRwPBETkyrLgAREVFUMDzRIG8+/PmJuupCEBERRQXDE+1kGewkTkREtEEcwlNDdQFSbOrhz05w8V8iIqIecQhPvHmrceHhz04wuBIREW0Sh/DUUl2AFJp7+NMc168jIiLqI/Lh6bPhZ1qwJ2ikcCyDS7AQERFtK/LhSWDzUTjaAKYe/jTHplIiIqJtxCU81VUXICX0Bz/JMagSERHtgOGJus49+EluVnUhiIiIoi4W4enzA5k62O8pSG8++PGYqboQREREcRCL8CSwViQY1Qc/HuPyK0RERA4xPKVbtf36mK66EERERHESm/D0+YHMLOxh9OQPBiciIiIPYhOeBFN1ARKi2tZGddWFICIiiqO4hacK2HFc1gUGJyIiIu9iFZ4+P5hZgx2gyJtz7YlRvn5EREQSYhWeBNY+udcG8MraxKipuiBERERxF7vwJGqfOLTeuUUAxbUfjXLmcCIiIh/ELjwBQOvQHhPAvOpyxEAVgLb2o+Mt1QUhIiJKiqdVF0CCDnvB4KzickRRG4C+9i/HOTcWERGRz2JZ8wQArUN7WrADFG00D6B4/4cMTkREREGIbXgCgNbhPbMALqkuR0S0AVy4/9ox7f4Pj7VUF4aIiCipYh2eAKB1eI8Bu29Pms0BKN5/7RinISAiIgrYLsuyVJfBF2PXH5mwcBYAYFmwAKD71CwLsNY30X3O3d/1bvfuaHUf07Nz96969um33bcMPafabrtvGbrH73mrxPYyAP3ePx+tb/e6EBERkb8SE54AYGz1kQngbArCU9uyLOPeD46ypomIiChksW+267U88qyOZDfhtWH38coxOBEREamRqJqnrrGVh7oFvJWgmqe2ZVkVWKjcfXVkzenrQERERP5LZHgCgNGVh0VYMAGMxzg8LcJC5c73jpgunz4REREFJLHhqWv02kMDlnUxRuGpbVmYBazKndNHuKQKERFRxCQ+PAHA6NUHOVgwLKyPxrP/G6nwNAdgFhZmb3/3MJvmiIiIIioV4anr+JUHOQAGLEuEKKXhaRlA3a5lQv32K4cYmIiIiGIgVeGp6/hyewiADgu61e0TBQQdnpYBNCwLdQD1W+MH2SRHREQUQ6kMT72Otdo5WJYGQIMFzbIwJhme2gAasKyWBbRgh6XGze8cYM0SERFRAqQ+PPVz9PJ9DQBgoQgLQzuEpxYstMT22o2Xh1mbRERElHD/D/pjskVVrcq7AAAAAElFTkSuQmCC" alt="AuraTrail" style={{height:44,objectFit:'contain'}}/>
+      </div>
+    </div>);
+
+  /* ═══ EXPLORE ═══ */
+  case 'explore': return (
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 px-6 pt-10 pb-8 rounded-b-[2rem]">
+        <h2 className="text-white text-2xl font-bold fade-in">Hola {userName} <span className="inline-block">👋</span></h2>
+        <p className="text-white/60 text-sm mt-1 fade-in-d1">¿Qué quieres explorar hoy?</p>
+        <button onClick={()=>{setSelectedCity('Bogotá');showT('📍 Mostrando lugares cerca de ti · Bogotá');}} className="mt-4 bg-white/20 text-white text-sm font-medium px-4 py-2.5 rounded-xl flex items-center gap-2 fade-in-d2 border border-white/20">
+          <I.crosshair s={16} c="white"/> Usar mi ubicación
+        </button>
+      </div>
+      <div className="px-4 mt-6">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-gray-800 font-bold text-sm flex items-center gap-2"><I.map s={16} c="#06B6D4"/> Elige tu destino</p>
+          {!selectedCity&&<button onClick={()=>setCityView(v=>v==='carousel'?'list':'carousel')} className="text-xs font-semibold text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full">
+            {cityView==='carousel'?'Ver listado':'Ver carrusel'}
+          </button>}
+        </div>
+        {!selectedCity ? (
+          cityView==='carousel' ? (
+            /* CAROUSEL VIEW */
+            <div>
+              <div className="overflow-x-auto scrollbar-hide -mx-4 px-4" style={{scrollSnapType:'x mandatory',display:'flex',gap:12}}>
+                {CITIES.map((c,idx)=>(
+                  <div key={c} style={{scrollSnapAlign:'start',flexShrink:0,width:'calc(100vw - 64px)',maxWidth:360}} onClick={()=>setSelectedCity(c)} className="cursor-pointer">
+                    <div className="relative rounded-3xl overflow-hidden card-hover" style={{height:380}}>
+                      <div className="absolute inset-0 bg-img" style={{backgroundImage:'url('+CITY_IMAGES[c]+')'}}/>
+                      <div className="absolute inset-0" style={{background:'linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.7) 100%)'}}/>
+                      <div className="absolute bottom-0 left-0 right-0 p-6">
+                        <p className="text-white text-2xl font-black mb-1">{c}</p>
+                        <p className="text-white/60 text-sm">{PLACES.filter(p=>p.city===c).length} sitios turísticos</p>
+                        <div className="mt-4 inline-flex items-center gap-2 bg-white/20 text-white text-xs font-semibold px-4 py-2 rounded-full border border-white/30">
+                          <I.mapPin s={12} c="white"/> Explorar
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-center text-gray-400 text-[10px] mt-3 font-medium">← Desliza para explorar →</p>
+            </div>
+          ) : (
+            /* LIST VIEW */
+            <div className="grid grid-cols-2 gap-3">
+              {CITIES.map(c=>(
+                <button key={c} onClick={()=>setSelectedCity(c)} className="h-44 rounded-2xl overflow-hidden relative card-hover">
+                  <div className="absolute inset-0 bg-img" style={{backgroundImage:'url('+CITY_IMAGES[c]+')'}}/>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"/>
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <p className="text-white text-sm font-bold">{c}</p>
+                    <p className="text-white/50 text-[10px] mt-0.5">{PLACES.filter(p=>p.city===c).length} lugares</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )
+        ) : (
+          /* City selected: text-only chips + places list */
+          <div>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-3 -mx-1 px-1">
+              {CITIES.map(c=>(
+                <button key={c} onClick={()=>setSelectedCity(c)}
+                  className={'flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all '+(selectedCity===c?'bg-cyan-500 text-white shadow-md shadow-cyan-500/30':'bg-gray-100 text-gray-600 hover:bg-gray-200')}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <div className="space-y-4 mt-4 fade-in">
+              <div className="flex items-center justify-between">
+                <p className="text-gray-800 font-bold text-sm flex items-center gap-2"><I.mapPin s={16} c="#06B6D4"/> {selectedCity}</p>
+                <button onClick={()=>setSelectedCity(null)} className="text-xs text-cyan-600 font-medium">Ver todos</button>
+              </div>
+              {PLACES.filter(p=>p.city===selectedCity).map(place=>(<div key={place.id} onClick={()=>openDetail(place)} className="bg-white rounded-2xl overflow-hidden shadow-sm card-hover cursor-pointer border border-gray-100">
+                <div className="relative h-36 bg-img bg-gray-200" style={{backgroundImage:'url('+place.mainImage+')'}}>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"/>
+                  <div className="absolute bottom-2 left-3 right-3">
+                    <h3 className="text-white font-bold text-sm leading-tight">{place.name}</h3>
+                  </div>
+                  <div className="absolute top-2 right-2 flex gap-1.5">
+                    <button onClick={e=>{e.stopPropagation();if(favorites[place.id]){removeFav(place.id);showT('Eliminado');}else{handleSave(place.id,place.name);}}} className="w-7 h-7 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
+                      <I.heart s={12} c={favorites[place.id]?'#FF6B6B':'white'} f={favorites[place.id]?'#FF6B6B':'none'}/>
+                    </button>
+                  </div>
+                </div>
+                <div className="px-3 py-2 flex items-center justify-between">
+                  <p className="text-gray-400 text-xs truncate max-w-[180px]">{place.description}</p>
+                  <Stars rating={place.rating} size={12}/>
+                </div>
+              </div>))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>);
+
+  /* ═══ DETAIL ═══ */
+  case 'detail':{
+    if(!selectedPlace)return null;const p=selectedPlace;
+    const tabs=['Historia','Datos','Rutas','Fotos','Restaurantes'];
+    const reviews=[...REVIEWS,...(userReviews[p.id]||[])];
+    return(<div className="min-h-screen bg-gray-50 pb-24">
+      <div className="relative h-72 bg-img bg-gray-300" style={{backgroundImage:'url('+p.mainImage+')'}}>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10"/>
+        <div className="absolute top-4 left-4 z-10"><button onClick={()=>nav(prevRef.current==='ar'?'ar':'explore')} className="w-10 h-10 glass rounded-full flex items-center justify-center"><I.back s={20} c="white"/></button></div>
+        <div className="absolute top-4 right-4 flex gap-2 z-10">
+          <button onClick={()=>{if(favorites[p.id]){removeFav(p.id);showT('Eliminado');}else handleSave(p.id,p.name);}} className="w-10 h-10 glass rounded-full flex items-center justify-center"><I.heart s={18} c={favorites[p.id]?'#FF6B6B':'white'} f={favorites[p.id]?'#FF6B6B':'none'}/></button>
+          <button onClick={()=>showT('Link copiado ✓')} className="w-10 h-10 glass rounded-full flex items-center justify-center"><I.share s={18} c="white"/></button>
+        </div>
+        <div className="absolute bottom-4 left-4 right-4">
+          <p className="text-white/60 text-xs font-medium mb-1">{p.city}</p>
+          <h1 className="text-white text-2xl font-black mb-2">{p.name}</h1>
+          <Stars rating={p.rating} size={14}/>
+        </div>
+      </div>
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-10"><div className="flex overflow-x-auto scrollbar-hide">
+        {tabs.map((t,i)=>(<button key={t} onClick={()=>setDetailTab(i)} className={'flex-shrink-0 px-5 py-3.5 text-xs font-semibold transition-colors border-b-2 '+(detailTab===i?'text-cyan-600 border-cyan-500':'text-gray-400 border-transparent')}>{t}</button>))}
+      </div></div>
+      <div className="px-4 pt-4">
+        {detailTab===0&&<div className="fade-in space-y-3">{p.history.split('\n\n').map((para,i)=><p key={i} className="text-gray-600 text-sm leading-relaxed">{para}</p>)}</div>}
+        {detailTab===1&&<div className="fade-in space-y-2.5">{p.curiosities.map((c,i)=><div key={i} className="bg-white rounded-2xl p-4 shadow-sm flex items-start gap-3 border border-gray-100"><div className="w-8 h-8 rounded-full bg-cyan-50 flex items-center justify-center flex-shrink-0"><I.star s={14} c="#06B6D4"/></div><p className="text-gray-600 text-sm">{c.text}</p></div>)}</div>}
+        {detailTab===2&&<div className="fade-in space-y-2.5">{p.routes.map((r,i)=><div key={i} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100"><h4 className="font-bold text-gray-800 text-sm mb-2">{r.name}</h4><div className="flex gap-4 text-xs text-gray-500"><span className="flex items-center gap-1"><I.clock s={12} c="#9CA3AF"/>{r.duration}</span><span className="flex items-center gap-1"><I.navigation s={12} c="#9CA3AF"/>{r.distance}</span><span className={'font-semibold '+(r.difficulty==='Fácil'?'text-emerald-600':r.difficulty==='Moderada'?'text-amber-500':'text-coral')}>{r.difficulty}</span></div></div>)}</div>}
+        {detailTab===3&&<div className="fade-in grid grid-cols-2 gap-2">{p.photos.map((ph,i)=><div key={i} className="w-full h-36 rounded-2xl bg-img bg-gray-200" style={{backgroundImage:'url('+ph+')'}}/>)}</div>}
+        {detailTab===4&&<div className="fade-in space-y-2.5">{p.restaurants.map((r,i)=><div key={i} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between"><div><h4 className="font-bold text-gray-800 text-sm">{r.name}</h4><p className="text-xs text-gray-400 mt-0.5">{r.cuisine}</p></div><Stars rating={r.rating} size={12}/></div>)}</div>}
+      </div>
+      {/* Reviews */}
+      <div className="px-4 mt-8">
+        <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><I.star s={16} c="#F59E0B" f="#F59E0B"/> Reseñas</h3>
+        <div className="space-y-2.5 mb-4">{reviews.map((r,i)=>(
+          <div key={i} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-2"><div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center text-white font-bold text-xs">{r.name.charAt(0)}</div><div className="flex-1"><p className="text-xs font-bold text-gray-800">{r.name}</p><p className="text-[10px] text-gray-400">{r.date}</p></div><Stars rating={r.rating} size={10}/></div>
+            <p className="text-xs text-gray-500 leading-relaxed">{r.comment}</p>
+          </div>))}</div>
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <p className="text-sm font-bold text-gray-800 mb-2">Tu reseña</p>
+          <Stars rating={reviewRating} size={22} interactive onChange={setReviewRating}/>
+          <textarea value={reviewText} onChange={e=>setReviewText(e.target.value)} placeholder="¿Qué te pareció?" className="w-full mt-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-cyan-500 resize-none h-20"/>
+          <button onClick={()=>submitReview(p.id)} disabled={!reviewText.trim()||reviewRating===0} className={'mt-2 w-full py-3 rounded-xl text-sm font-bold text-white transition-all '+(reviewText.trim()&&reviewRating>0?'bg-gradient-to-r from-cyan-500 to-cyan-600':'bg-gray-200 cursor-not-allowed')}>Publicar</button>
+        </div>
+      </div>
+      {/* Stamp */}
+      <div className="px-4 mt-8 mb-8">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
+          <p className="text-lg font-black text-white mb-1 flex items-center justify-center gap-2"><I.award s={20} c="#22D3EE"/> ¡Lugar explorado!</p>
+          <p className="text-xs text-white/40 mb-4">Desbloquea esta estampita para tu colección</p>
+          <div className="flex justify-center mb-4"><StampBadge city={p.city} collected={stamps.has(p.id)} size={120}/></div>
+          <button onClick={()=>setStampPreview(p.city)} className="glow bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold px-8 py-3.5 rounded-2xl">Ver mi estampita</button>
+        </div>
+      </div>
+    </div>);}
+
+  /* ═══ FAVORITES ═══ */
+  case 'favorites':{
+    const favP=PLACES.filter(p=>favorites[p.id]);
+    const allCities=[...new Set(PLACES.map(p=>p.city))];
+    return(<div className="min-h-screen bg-gray-50 pb-24">
+      <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 px-6 pt-10 pb-8 rounded-b-[2rem]">
+        <h2 className="text-white text-2xl font-bold flex items-center gap-2"><I.bookmark s={22} c="white"/> Mi Mochila</h2>
+        <p className="text-white/60 text-sm mt-1">{favP.length} guardados · {stamps.size} estampitas</p>
+      </div>
+      <div className="px-4 mt-6">
+        <h3 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><I.heart s={16} c="#FF6B6B"/> Guardados</h3>
+        {favP.length===0?<div className="text-center py-10"><I.heart s={40} c="#E5E7EB"/><p className="text-sm text-gray-400 mt-3">Aún no has guardado lugares</p></div>:
+          <div className="space-y-2.5 mb-6">{favP.map(p=>(
+            <div key={p.id} onClick={()=>openDetail(p)} className="bg-white rounded-2xl p-3 shadow-sm flex items-center gap-3 cursor-pointer card-hover border border-gray-100">
+              <div className="w-16 h-16 rounded-xl bg-img bg-gray-200 flex-shrink-0" style={{backgroundImage:'url('+p.mainImage+')'}}/>
+              <div className="flex-1 min-w-0"><h4 className="font-bold text-gray-800 text-sm truncate">{p.name}</h4><p className="text-xs text-gray-400">{p.city}</p><span className="inline-block mt-1 text-[10px] font-medium text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full">{favorites[p.id]}</span></div>
+            </div>))}</div>}
+        {/* Stamps collection */}
+        <h3 className="font-bold text-gray-800 text-sm mb-3 mt-6 flex items-center gap-2"><I.award s={16} c="#F59E0B"/> Estampitas</h3>
+        <p className="text-xs text-gray-400 mb-4">{stamps.size} de {allCities.length} desbloqueadas · Explora lugares para desbloquear</p>
+        <div className="grid grid-cols-3 gap-3">{allCities.map(city=>{
+          const collected=PLACES.filter(p=>p.city===city&&stamps.has(p.id)).length>0;
+          return(<div key={city} className="flex flex-col items-center cursor-pointer" onClick={()=>{if(collected){const p=PLACES.find(x=>x.city===city&&stamps.has(x.id));if(p)openDetail(p);}else{setStampPreview(city);}}}>
+            <StampBadge city={city} collected={collected} size={110} onTapLocked={(c)=>setStampPreview(c)}/>
+          </div>);
+        })}</div>
+      </div>
+    </div>);}
+
+  /* ═══ PROFILE ═══ */
+  case 'profile': return(
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 px-6 pt-10 pb-10 rounded-b-[2rem] text-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-40 h-40 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2"/>
+        <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/5 rounded-full translate-x-1/2 translate-y-1/2"/>
+        <div className="w-20 h-20 rounded-full bg-white/20 mx-auto flex items-center justify-center text-3xl font-black text-white mb-3 border-2 border-white/30">{(userName||'?').charAt(0).toUpperCase()}</div>
+        <h2 className="text-white text-xl font-bold">{userName||'Viajero'}</h2>
+        <p className="text-white/60 text-sm mt-1">Explorador de Colombia</p>
+      </div>
+      <div className="px-4 mt-10">
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100"><p className="text-2xl font-black text-cyan-500">{Object.keys(favorites).length}</p><p className="text-[10px] text-gray-400 mt-1 font-medium">Guardados</p></div>
+          <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100"><p className="text-2xl font-black text-cyan-600">{stamps.size}</p><p className="text-[10px] text-gray-400 mt-1 font-medium">Estampitas</p></div>
+          <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100"><p className="text-2xl font-black text-amber-500">{Object.values(userReviews).flat().length}</p><p className="text-[10px] text-gray-400 mt-1 font-medium">Reseñas</p></div>
+        </div>
+        <h3 className="font-bold text-gray-800 text-sm mb-3">Mis intereses</h3>
+        <div className="flex flex-wrap gap-2 mb-6">{userPrefs.map(pr=>{const o=PREF_OPTIONS.find(x=>x.id===pr);return o?<span key={pr} className="bg-cyan-50 text-cyan-600 text-xs font-semibold px-4 py-2 rounded-full">{o.label}</span>:null;})}{userPrefs.length===0&&<p className="text-sm text-gray-400">Sin preferencias</p>}</div>
+      </div>
+    </div>);
+  default:return null;}}
+
+  return(
+    <div className="min-h-screen bg-gray-900 flex items-start justify-center">
+      <div ref={scrollRef} className="relative w-full max-w-[430px] min-h-screen bg-gray-50 shadow-2xl overflow-hidden" style={{maxHeight:'100vh',overflowY:'auto'}}>
+        <div className={'transition-all duration-200 '+(transitioning?'opacity-0 scale-[0.98]':'opacity-100 scale-100')}>{renderScreen()}</div>
+        <Toast message={toast} show={!!toast}/>
+        {showConfetti&&<Confetti/>}
+        <SaveModal show={saveModal.show} placeName={saveModal.placeName} onClose={()=>setSaveModal({show:false,placeId:null,placeName:''})} onSave={confirmSave}/>
+        <StampPreviewModal city={stampPreview} show={!!stampPreview} onClose={()=>setStampPreview(null)}/>
+        {showNav&&(<div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/90 backdrop-blur-xl border-t border-gray-200/50 flex z-40">
+          {[{id:'splash',icon:I.home,label:'Inicio'},{id:'explore',icon:I.search,label:'Explorar'},{id:'favorites',icon:I.heart,label:'Guardados'},{id:'profile',icon:I.user,label:'Perfil'}].map(tab=>(
+            <button key={tab.id} onClick={()=>nav(tab.id)} className={'flex-1 flex flex-col items-center py-3 transition-colors '+(screen===tab.id?'text-cyan-500':'text-gray-400')}>
+              <tab.icon s={20} c={screen===tab.id?'#06B6D4':'#9CA3AF'}/><span className="text-[10px] font-semibold mt-1">{tab.label}</span>
+            </button>))}
+        </div>)}
+      </div>
+    </div>);
+}
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
